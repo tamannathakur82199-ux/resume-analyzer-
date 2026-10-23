@@ -154,6 +154,62 @@ def build_profile(parsed: dict) -> dict:
     })
 
 
+def build_tailored_profile(parsed: dict, jd_skills: list[str]) -> tuple[dict, list[str], list[str], list[str]]:
+    """Build a profile from parsed resume, retaining ONLY skills that match the Job Description.
+
+    Returns:
+        (tailored_profile, matched_skills, removed_skills, missing_jd_skills)
+    """
+    base_prof = build_profile(parsed)
+    jd_skill_set = set(jd_skills)
+    resume_skills = parsed.get("skills", [])
+
+    matched_skills = [s for s in jd_skills if s in resume_skills]
+    missing_jd_skills = [s for s in jd_skills if s not in resume_skills]
+    removed_skills = [s for s in resume_skills if s not in jd_skill_set]
+
+    matched_lower = {s.lower() for s in matched_skills}
+    filtered_grouped = {}
+    skills_accounted_for = set()
+
+    for cat, items in base_prof.get("skills", {}).items():
+        kept = []
+        for it in items:
+            it_clean = it.strip()
+            if is_ph(it_clean):
+                continue
+            it_skills = find_skills(it_clean, fuzzy=False)
+            is_match = any(sc in jd_skill_set for sc in it_skills) or (it_clean.lower() in matched_lower)
+            if is_match:
+                kept.append(it_clean)
+                for sc in it_skills:
+                    skills_accounted_for.add(sc.lower())
+                skills_accounted_for.add(it_clean.lower())
+        if kept:
+            filtered_grouped[cat] = kept
+
+    for s in matched_skills:
+        if s.lower() not in skills_accounted_for:
+            cat = SKILL_CATEGORY.get(s, "Matched Skills")
+            filtered_grouped.setdefault(cat, []).append(s)
+            skills_accounted_for.add(s.lower())
+
+    tailored_prof = dict(base_prof)
+    if filtered_grouped:
+        tailored_prof["skills"] = filtered_grouped
+    else:
+        tailored_prof["skills"] = {
+            "Relevant Skills": [PH("No matching skills found with this job description")]
+        }
+
+    return tailored_prof, matched_skills, removed_skills, missing_jd_skills
+
+
+build_tailored_resume = build_tailored_profile
+
+
+
+
 def profile_from_fields(f: dict) -> dict:
     """Profile from plain-text form fields (used by the 'Build Resume' tab)."""
     def lines(key):
