@@ -8,9 +8,11 @@ import streamlit as st
 
 from analyzer import (ai_check_rows, analyze_files, check_ai_files, formatted_resume,
                       results_dataframe, safe_name)
+from matcher import parse_job_description
 from report_generator import build_report_pdf
-from resume_builder import build_resume_docx, build_resume_pdf, profile_from_fields
-from resume_parser import extract_text
+from resume_builder import (build_resume_docx, build_resume_pdf, build_tailored_profile,
+                            is_ph, profile_from_fields)
+from resume_parser import extract_text, parse_resume
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_JD = os.path.join(HERE, "sample_data", "job_description.txt")
@@ -77,7 +79,9 @@ with st.sidebar:
             "placeholders). It is an indicator, not proof."
         )
 
-tab_analyze, tab_ai, tab_build = st.tabs(["Analyze & Shortlist", "AI Resume Check", "Build Resume"])
+tab_analyze, tab_ai, tab_build, tab_edit_jd = st.tabs(
+    ["Analyze & Shortlist", "AI Resume Check", "Build Resume", "Edit Resume a/c to JD"]
+)
 
 # --------------------------------------------------------------------------- analyze tab
 with tab_analyze:
@@ -307,3 +311,174 @@ with tab_build:
         x1, x2, _ = st.columns([1, 1, 3])
         x1.download_button("Download DOCX", built["docx"], f"{built['base']}_resume.docx", DOCX_MIME, key="b_docx")
         x2.download_button("Download PDF", built["pdf"], f"{built['base']}_resume.pdf", "application/pdf", key="b_pdf")
+
+# --------------------------------------------------------------------------- edit resume a/c to JD tab
+with tab_edit_jd:
+    st.subheader("Edit Resume a/c to JD")
+    st.caption("Upload candidate resume along with the target company's job description. "
+               "The generated resume will strictly retain **ONLY the skills that match this specific Job Description**, "
+               "removing irrelevant skills to make the resume 100% targeted and ATS-aligned.")
+
+    t_col1, t_col2 = st.columns(2)
+    with t_col1:
+        st.subheader("1. Candidate Resume")
+        tailor_upload = st.file_uploader(
+            "Upload your resume (PDF / DOCX / TXT)",
+            type=["pdf", "docx", "txt"],
+            key="tailor_resume_file"
+        )
+        st.caption("Upload candidate's existing resume in PDF, DOCX, or TXT format.")
+
+    with t_col2:
+        st.subheader("2. Target Job Description")
+        if st.button("Load sample job description", key="tailor_load_sample"):
+            with open(SAMPLE_JD, encoding="utf-8") as fh:
+                st.session_state["tailor_jd_text"] = fh.read()
+        tailor_jd_file = st.file_uploader(
+            "Upload JD file (optional)",
+            type=["txt", "pdf", "docx"],
+            key="tailor_jd_file"
+        )
+        if tailor_jd_file is not None:
+            st.session_state["tailor_jd_text"] = extract_text(tailor_jd_file.getvalue(), tailor_jd_file.name)[0]
+        tailor_jd_text = st.text_area(
+            "Paste target job description",
+            key="tailor_jd_text",
+            height=200,
+            placeholder="Paste the job description of the company here..."
+        )
+
+    t_btn = st.button("Edit Resume a/c to JD", type="primary", key="btn_run_tailor",
+                      disabled=not (tailor_upload and tailor_jd_text.strip()))
+
+    if t_btn:
+        with st.spinner("Analyzing resume and tailoring skills to the job description..."):
+            try:
+                res_text, res_meta = extract_text(tailor_upload.getvalue(), tailor_upload.name)
+                if len(res_text.strip()) < 30:
+                    st.error("No readable text found in the uploaded resume. Please upload a text-based PDF or DOCX.")
+                else:
+                    parsed_res = parse_resume(res_text, res_meta)
+                    parsed_jd = parse_job_description(tailor_jd_text)
+
+                    if not parsed_jd["skills"]:
+                        st.warning("No specific technical skills were detected in the Job Description. "
+                                   "Please check that the job description includes required technologies or skills.")
+
+                    tailored_prof, matched_skills, removed_skills, missing_jd = build_tailored_profile(
+                        parsed_res, parsed_jd["skills"]
+                    )
+
+                    t_docx = build_resume_docx(tailored_prof)
+                    t_pdf = build_resume_pdf(tailored_prof)
+                    base_name = (safe_name(tailored_prof["name"])
+                                 if (tailored_prof.get("name") and not is_ph(tailored_prof["name"]))
+                                 else safe_name(os.path.splitext(tailor_upload.name)[0]))
+
+                    st.session_state["tailored_data"] = {
+                        "profile": tailored_prof,
+                        "matched": matched_skills,
+                        "removed": removed_skills,
+                        "missing": missing_jd,
+                        "jd_skills": parsed_jd["skills"],
+                        "docx": t_docx,
+                        "pdf": t_pdf,
+                        "filename_base": base_name,
+                        "name": tailored_prof["name"],
+                        "email": tailored_prof["email"],
+                        "phone": tailored_prof["phone"],
+                    }
+            except Exception as exc:
+                st.error(f"Error processing resume: {exc}")
+
+    t_data = st.session_state.get("tailored_data")
+    if t_data:
+        st.divider()
+        st.subheader("🎯 Results: Matched Skills Analysis")
+
+        total_jd = len(t_data["jd_skills"])
+        match_pct = round((len(t_data["matched"]) / total_jd * 100), 1) if total_jd > 0 else 0.0
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("JD Skills Match", f"{match_pct}%")
+        m2.metric("Retained Skills (Matched)", len(t_data["matched"]))
+        m3.metric("Removed Skills (Unmatched)", len(t_data["removed"]))
+        m4.metric("Missing JD Skills", len(t_data["missing"]))
+
+        st.markdown(
+            f"**Candidate:** {t_data['name']} &nbsp;|&nbsp; "
+            f"**Email:** {t_data['email']} &nbsp;|&nbsp; "
+            f"**Phone:** {t_data['phone']}"
+        )
+
+        st.markdown("#### Skills Breakdown")
+        st.markdown("**✅ Retained in Tailored Resume (Matched with JD):**")
+        st.markdown(pills(t_data["matched"], "ok"), unsafe_allow_html=True)
+        st.caption("Sirf vhi skills resume me rakhi gayi hain jo company ki Job Description se match karti hain.")
+
+        if t_data["removed"]:
+            st.markdown("**❌ Removed from Resume (Not in this JD):**")
+            st.markdown(pills(t_data["removed"], "miss"), unsafe_allow_html=True)
+            st.caption("Ye skills candidate ke resume me thi par is JD me require nahi thi, isliye edited resume se hata di gayi hain.")
+
+        if t_data["missing"]:
+            st.markdown("**⚠️ Missing Skills (Required by JD):**")
+            st.markdown(pills(t_data["missing"], "extra"), unsafe_allow_html=True)
+            st.caption("Ye skills company ki JD me mangi gayi hain par candidate ke resume me nahi mili.")
+
+        st.divider()
+        st.subheader("📥 Download Edited Resume")
+        st.success("Resume successfully edited according to JD! Only matching skills have been kept in the skills section.")
+
+        d1, d2, _ = st.columns([1, 1, 3])
+        base_fn = t_data["filename_base"]
+        d1.download_button(
+            "Download Edited DOCX",
+            t_data["docx"],
+            f"{base_fn}_edited.docx",
+            DOCX_MIME,
+            key="tailor_docx_btn"
+        )
+        d2.download_button(
+            "Download Edited PDF",
+            t_data["pdf"],
+            f"{base_fn}_edited.pdf",
+            "application/pdf",
+            key="tailor_pdf_btn"
+        )
+
+        with st.expander("👁️ Preview Edited Resume Content", expanded=False):
+            prof = t_data["profile"]
+            st.markdown(f"### {prof['name']}")
+            st.markdown(f"*{prof['email']} | {prof['phone']} | {prof.get('location', '')}*")
+            if prof.get("summary") and not is_ph(prof["summary"]):
+                st.markdown("**Professional Summary**")
+                st.write(prof["summary"])
+
+            st.markdown("**Tailored Skills (Filtered to JD)**")
+            for cat, items in prof.get("skills", {}).items():
+                st.markdown(f"- **{cat}:** {', '.join(items)}")
+
+            if prof.get("experience"):
+                st.markdown("**Experience**")
+                for e in prof["experience"]:
+                    st.markdown(f"**{e['heading']}** {('(' + e['date'] + ')') if e.get('date') else ''}")
+                    if e.get("sub"):
+                        st.caption(e["sub"])
+                    for b in e.get("bullets", []):
+                        st.write(f"• {b}")
+
+            if prof.get("projects"):
+                st.markdown("**Projects**")
+                for pr in prof["projects"]:
+                    st.markdown(f"**{pr['heading']}** {('(' + pr['date'] + ')') if pr.get('date') else ''}")
+                    for b in pr.get("bullets", []):
+                        st.write(f"• {b}")
+
+            if prof.get("education"):
+                st.markdown("**Education**")
+                for ed in prof["education"]:
+                    st.markdown(f"**{ed['heading']}** {('(' + ed['date'] + ')') if ed.get('date') else ''}")
+                    if ed.get("sub"):
+                        st.caption(ed["sub"])
+
