@@ -11,7 +11,7 @@ from analyzer import (ai_check_rows, analyze_files, check_ai_files, formatted_re
 from matcher import parse_job_description
 from report_generator import build_report_pdf
 from resume_builder import (build_resume_docx, build_resume_pdf, build_tailored_profile,
-                            is_ph, profile_from_fields)
+                            is_ph,build_tailored_resume, profile_from_fields)
 from resume_parser import extract_text, parse_resume
 
 HERE = os.path.dirname(os.path.abspath(__file__))
