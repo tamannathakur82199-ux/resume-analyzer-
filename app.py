@@ -1,4 +1,4 @@
-"""AI Resume Analyzer - Streamlit web app.
+"""Parakh AI - Streamlit web app.
 
 Run with:   streamlit run app.py
 """
@@ -18,7 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_JD = os.path.join(HERE, "sample_data", "job_description.txt")
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
-st.set_page_config(page_title="AI Resume Analyzer", page_icon="📄", layout="wide")
+st.set_page_config(page_title="Parakh AI", page_icon="📄", layout="wide")
 
 st.markdown(
     """
@@ -34,9 +34,9 @@ st.markdown(
       .extra {background:#e8eef7; color:#2a4a7f;}
       .badge {padding: 3px 12px; border-radius: 6px; font-weight: 700; color: #fff;}
     </style>
-    <div class="hero"><h1>AI Resume Analyzer</h1>
-    <p>Analyse resumes against a job description, shortlist the best candidates, get format fixes
-    and download a resume in the required format.</p></div>
+    <div class="hero"><h1>Parakh AI</h1>
+    <p>Analyse resumes against a job description, shortlist the best candidates, get format fixes,
+    edit resumes according to JD, and download resumes in ATS-friendly format.</p></div>
     """,
     unsafe_allow_html=True,
 )
@@ -287,7 +287,7 @@ with tab_build:
                                               "- Built a REST API with Flask used by 3 teams\n"
                                               "- Improved report speed by 40%")
         projects = st.text_area("Projects", height=140,
-                                placeholder="AI Resume Analyzer | Python, Scikit-learn | 2025\n"
+                                placeholder="Parakh AI | Python, Scikit-learn | 2025\n"
                                             "- Developed a TF-IDF engine that ranks resumes against a JD")
         education = st.text_area("Education", height=100,
                                  placeholder="MCA, HPTU | 2024 - 2026\nCGPA: 8.4")
