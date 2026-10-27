@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import datetime as _dt
+import os
 
 from fpdf import FPDF
 
 from analyzer import ai_label
 from resume_builder import NAVY, _latin
 
+LOGO_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo.png")
 STATUS_COLORS = {"Shortlisted": (30, 130, 76), "On Hold": (200, 130, 20), "Rejected": (180, 50, 50)}
 
 
@@ -31,7 +33,12 @@ def build_report_pdf(results, jd: dict, threshold: float) -> bytes:
         pdf.set_x(pdf.l_margin + indent)
         pdf.multi_cell(W - indent, 5, _latin(text), new_x="LMARGIN", new_y="NEXT")
 
-    h1("Resume Analysis & Shortlisting Report")
+    h1("Parakh AI - Resume Analysis & Shortlisting Report")
+    if os.path.exists(LOGO_FILE):
+        try:
+            pdf.image(LOGO_FILE, x=pdf.w - 32, y=13, w=17)
+        except Exception:
+            pass
     body(f"Generated on {_dt.date.today():%d %b %Y}  |  Resumes analysed: {len(results)}  |  "
          f"Shortlist cut-off: {threshold:.0f}%", color=(90, 90, 90))
     body("Skills required by the job: " + (", ".join(jd["skills"]) or "none detected"), size=9.5)
