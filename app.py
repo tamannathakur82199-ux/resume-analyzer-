@@ -19,7 +19,12 @@ from resume_parser import extract_text, parse_resume
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_JD = os.path.join(HERE, "sample_data", "job_description.txt")
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-LOGO_PATH = os.path.join(HERE, "assets", "C:\\Users\\HP\\Desktop\\project\\Parakh_AI\\assets\\logo.png")
+# Look for the logo in the assets folder first, then beside app.py.
+LOGO_CANDIDATES = [
+    os.path.join(HERE, "assets", "logo.png"),
+    os.path.join(HERE, "logo.png"),
+]
+LOGO_PATH = next((path for path in LOGO_CANDIDATES if os.path.isfile(path)), "")
 
 
 def get_base64_image(image_path: str) -> str:
