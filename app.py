@@ -19,7 +19,7 @@ from resume_parser import extract_text, parse_resume
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_JD = os.path.join(HERE, "sample_data", "job_description.txt")
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-LOGO_PATH = os.path.join(HERE, "assets", "logo.png")
+LOGO_PATH = os.path.join(HERE, "assets", "C:\\Users\\HP\\Desktop\\project\\Parakh_AI\\assets\\logo.png")
 
 
 def get_base64_image(image_path: str) -> str:
@@ -1047,7 +1047,7 @@ elif active_tab == "Tailor to Job":
                 use_container_width=True
             )
 
-        with st.expander("👁️ Preview Tailored Resume Structure", expanded=False):
+        with st.expander("👁️ Preview Resume Structure", expanded=False):
             prof = t_data["profile"]
             st.markdown(f"### {prof['name']}")
             st.caption(f"{prof['email']} | {prof['phone']} | {prof.get('location', '')}")
