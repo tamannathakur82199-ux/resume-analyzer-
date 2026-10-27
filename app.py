@@ -856,44 +856,41 @@ elif active_tab == "Build Resume":
     with st.form("build_form"):
         st.markdown("##### 👤 Personal & Contact Details")
         a, b, c = st.columns(3)
-        name = a.text_input("Full Name", placeholder="e.g. Aisha Verma")
-        email = b.text_input("Email", placeholder="e.g. aisha@example.com")
-        phone = c.text_input("Phone", placeholder="e.g. +91 9876543210")
+        name = a.text_input("Full Name")
+        email = b.text_input("Email")
+        phone = c.text_input("Phone")
 
         d, e, f = st.columns(3)
-        location = d.text_input("City, State (optional)", placeholder="e.g. Bengaluru, India")
-        linkedin = e.text_input("LinkedIn URL (optional)", placeholder="https://linkedin.com/in/username")
-        github = f.text_input("GitHub URL (optional)", placeholder="https://github.com/username")
+        location = d.text_input("City, State (optional)")
+        linkedin = e.text_input("LinkedIn URL (optional)")
+        github = f.text_input("GitHub URL (optional)")
 
         st.markdown("##### 📝 Professional Summary")
-        summary = st.text_area("Professional summary (2-3 lines)", height=85, placeholder="Passionate developer with experience in Python and machine learning...")
+        summary = st.text_area("Professional summary (2-3 lines)", height=85)
 
         st.markdown("##### ⚡ Skills")
         skills = st.text_area(
             "Skills",
-            height=95,
-            placeholder="Languages: Python, Java, SQL\nFrameworks: Flask, Streamlit\nDatabases: MySQL, PostgreSQL"
+            height=95
         )
 
         st.markdown("##### 💼 Experience / Internships")
         experience = st.text_area(
             "Experience / Internships",
-            height=125,
-            placeholder="Python Intern | ABC Pvt Ltd | Jun 2025 - Dec 2025\n- Built a REST API with Flask used by 3 teams\n- Improved report speed by 40%"
+            height=125
         )
 
         st.markdown("##### 🚀 Projects")
         projects = st.text_area(
             "Projects",
-            height=125,
-            placeholder="Parakh AI | Python, Scikit-learn | 2025\n- Developed a TF-IDF engine that ranks resumes against a JD"
+            height=125
         )
 
         st.markdown("##### 🎓 Education, Certifications & Achievements")
-        education = st.text_area("Education", height=85, placeholder="MCA, HPTU | 2024 - 2026\nCGPA: 8.4")
+        education = st.text_area("Education", height=85)
         g1, g2 = st.columns(2)
-        certs = g1.text_area("Certifications (one per line)", height=75, placeholder="AWS Certified Cloud Practitioner")
-        achievements = g2.text_area("Achievements (one per line)", height=75, placeholder="Hackathon Winner 2024")
+        certs = g1.text_area("Certifications (one per line)", height=75)
+        achievements = g2.text_area("Achievements (one per line)", height=75)
 
         submitted = st.form_submit_button("✨ Generate resume", type="primary", use_container_width=True)
 
