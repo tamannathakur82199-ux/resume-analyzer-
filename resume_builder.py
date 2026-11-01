@@ -243,9 +243,6 @@ def finalize_profile(p: dict) -> dict:
     if not p.get("education"):
         p["education"] = [{"heading": PH("Degree, College / University"), "date": PH("Year - Year"),
                            "sub": PH("CGPA / Percentage"), "bullets": []}]
-    if not p.get("experience") and not p.get("projects"):
-        p["projects"] = [{"heading": PH("Project name | Tech stack"), "date": "", "sub": "",
-                          "bullets": [PH("Built ... using ... that achieved ... (add a number / result)")]}]
     return p
 
 
