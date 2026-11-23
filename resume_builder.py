@@ -21,7 +21,7 @@ from fpdf import FPDF
 
 from resume_parser import BULLET_RE, DATE_RANGE_RE, find_skills
 from skills_db import SECTION_TITLES, SKILL_CATEGORY
-from resume_templates import get_template
+from resume_templates import get_template, hex_to_rgb
 
 NAVY = (31, 56, 100)
 PH_RED = (192, 57, 43)
@@ -290,10 +290,10 @@ def _docx_rule(par, color_hex: str = "1F3864", sz: str = "8"):
     par._p.get_or_add_pPr().append(pbdr)
 
 
-def build_resume_docx(profile: dict, path: str | None = None, template_id: str = "classic_ats") -> bytes:
+def build_resume_docx(profile: dict, path: str | None = None, template_id: str = "sidebar_modern", custom_color: str | None = None) -> bytes:
     tpl = get_template(template_id)
-    accent_rgb = tpl.get("accent_rgb", NAVY)
-    accent_hex = tpl.get("accent_hex", "#1F3864").replace("#", "")
+    accent_rgb = hex_to_rgb(custom_color) if custom_color and custom_color.startswith("#") else tpl.get("accent_rgb", NAVY)
+    accent_hex = custom_color.replace("#", "") if custom_color and custom_color.startswith("#") else tpl.get("accent_hex", "#1F3864").replace("#", "")
     font_name = tpl.get("font_family_docx", "Calibri")
     header_align = tpl.get("header_layout", "center")
 
@@ -312,12 +312,12 @@ def build_resume_docx(profile: dict, path: str | None = None, template_id: str =
         kind = block[0]
         if kind == "name":
             par = doc.add_paragraph()
-            par.alignment = WD_ALIGN_PARAGRAPH.LEFT if header_align == "left" else WD_ALIGN_PARAGRAPH.CENTER
+            par.alignment = WD_ALIGN_PARAGRAPH.LEFT if header_align in ("left", "sidebar", "top_banner", "dark_header") else WD_ALIGN_PARAGRAPH.CENTER
             par.paragraph_format.space_after = Pt(1)
             _docx_run(par, block[1], bold=True, size=20, color=accent_rgb)
         elif kind == "contact":
             par = doc.add_paragraph()
-            par.alignment = WD_ALIGN_PARAGRAPH.LEFT if header_align == "left" else WD_ALIGN_PARAGRAPH.CENTER
+            par.alignment = WD_ALIGN_PARAGRAPH.LEFT if header_align in ("left", "sidebar", "top_banner", "dark_header") else WD_ALIGN_PARAGRAPH.CENTER
             par.paragraph_format.space_after = Pt(4)
             for i, item in enumerate(block[1]):
                 if i:
@@ -375,9 +375,9 @@ def _latin(s: str) -> str:
     return s.encode("latin-1", "replace").decode("latin-1")
 
 
-def build_resume_pdf(profile: dict, path: str | None = None, template_id: str = "classic_ats") -> bytes:
+def build_resume_pdf(profile: dict, path: str | None = None, template_id: str = "sidebar_modern", custom_color: str | None = None) -> bytes:
     tpl = get_template(template_id)
-    accent_rgb = tpl.get("accent_rgb", NAVY)
+    accent_rgb = hex_to_rgb(custom_color) if custom_color and custom_color.startswith("#") else tpl.get("accent_rgb", NAVY)
     font_fam = tpl.get("font_family_pdf", "Helvetica")
     header_layout = tpl.get("header_layout", "center")
     rule_style = tpl.get("rule_style", "solid")
@@ -395,16 +395,146 @@ def build_resume_pdf(profile: dict, path: str | None = None, template_id: str = 
     def font(style="", size=10, text=""):
         pdf.set_font(font_fam, ("I" if is_ph(text) and "I" not in style else "") + style, size)
 
+    # 1. SPECIAL CASE: TWO-COLUMN SIDEBAR PDF LAYOUT
+    if template_id == "sidebar_modern":
+        # Draw Left Sidebar Background
+        sidebar_w = 64
+        pdf.set_fill_color(*accent_rgb)
+        pdf.rect(0, 0, sidebar_w, pdf.h, style="F")
+
+        # Avatar circle placeholder
+        pdf.set_fill_color(255, 255, 255)
+        pdf.ellipse(sidebar_w / 2 - 12, 14, 24, 24, style="F")
+        pdf.set_fill_color(*accent_rgb)
+        pdf.ellipse(sidebar_w / 2 - 11, 15, 22, 22, style="F")
+        pdf.set_font("Helvetica", "B", 12); pdf.set_text_color(255, 255, 255)
+        pdf.text(sidebar_w / 2 - 3, 29, "SP")
+
+        # Candidate Name in Sidebar
+        pdf.set_xy(6, 42)
+        pdf.set_font("Helvetica", "B", 14); pdf.set_text_color(255, 255, 255)
+        pdf.multi_cell(sidebar_w - 12, 5.5, _latin(profile.get("name", "Candidate")), align="C")
+
+        # Subtitle
+        pdf.set_font("Helvetica", "I", 8.5); pdf.set_text_color(230, 240, 255)
+        pdf.multi_cell(sidebar_w - 12, 4.5, "Professional Resume", align="C")
+        pdf.ln(3)
+
+        # Contact Info in Sidebar
+        pdf.set_font("Helvetica", "B", 9.5); pdf.set_text_color(255, 255, 255)
+        pdf.cell(sidebar_w - 12, 5, "CONTACT", new_x="LMARGIN", new_y="NEXT", align="L")
+        pdf.set_draw_color(255, 255, 255); pdf.set_line_width(0.3)
+        pdf.line(6, pdf.get_y(), sidebar_w - 6, pdf.get_y())
+        pdf.ln(2)
+
+        contacts = [profile.get("email"), profile.get("phone"), profile.get("location")]
+        contacts += [profile.get(k) for k in ("linkedin", "github") if profile.get(k)]
+        pdf.set_font("Helvetica", "", 7.5); pdf.set_text_color(240, 245, 255)
+        for c in [i for i in contacts if i]:
+            pdf.set_x(6)
+            pdf.multi_cell(sidebar_w - 12, 4, f"- {_latin(c)}", align="L")
+        pdf.ln(4)
+
+        # Skills in Sidebar
+        if profile.get("skills"):
+            pdf.set_x(6)
+            pdf.set_font("Helvetica", "B", 9.5); pdf.set_text_color(255, 255, 255)
+            pdf.cell(sidebar_w - 12, 5, "SKILLS", new_x="LMARGIN", new_y="NEXT", align="L")
+            pdf.line(6, pdf.get_y(), sidebar_w - 6, pdf.get_y())
+            pdf.ln(2)
+
+            for cat, items in profile["skills"].items():
+                pdf.set_x(6)
+                pdf.set_font("Helvetica", "B", 8); pdf.set_text_color(255, 255, 255)
+                pdf.multi_cell(sidebar_w - 12, 4, _latin(cat), align="L")
+                pdf.set_font("Helvetica", "", 7.5); pdf.set_text_color(240, 245, 255)
+                for it in items[:6]:
+                    pdf.set_x(8)
+                    pdf.multi_cell(sidebar_w - 14, 3.8, _latin(f"- {it}"), align="L")
+                pdf.ln(1)
+
+        # Right Body (x = 72, usable width = pdf.w - 72 - 14)
+        body_x = 72
+        body_w = pdf.w - body_x - 14
+        pdf.set_xy(body_x, 14)
+
+        # Summary
+        if profile.get("summary"):
+            pdf.set_font("Helvetica", "B", 10.5); pdf.set_text_color(*accent_rgb)
+            pdf.cell(body_w, 5.5, "PROFESSIONAL SUMMARY", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_draw_color(*accent_rgb); pdf.set_line_width(0.4)
+            pdf.line(body_x, pdf.get_y(), body_x + body_w, pdf.get_y())
+            pdf.ln(1.5)
+            pdf.set_x(body_x)
+            pdf.set_font("Helvetica", "", 9); pdf.set_text_color(40, 40, 40)
+            pdf.multi_cell(body_w, 4.5, _latin(profile["summary"]))
+            pdf.ln(3)
+
+        # Experience / Work History
+        if profile.get("experience"):
+            pdf.set_x(body_x)
+            pdf.set_font("Helvetica", "B", 10.5); pdf.set_text_color(*accent_rgb)
+            pdf.cell(body_w, 5.5, "WORK HISTORY", new_x="LMARGIN", new_y="NEXT")
+            pdf.line(body_x, pdf.get_y(), body_x + body_w, pdf.get_y())
+            pdf.ln(2)
+
+            for e in profile["experience"]:
+                pdf.set_x(body_x)
+                pdf.set_font("Helvetica", "B", 9.5); pdf.set_text_color(15, 23, 42)
+                h_text = _latin(e.get("heading", ""))
+                d_text = _latin(e.get("date", ""))
+                pdf.cell(body_w - 28, 4.5, h_text)
+                pdf.set_font("Helvetica", "I", 8.5); pdf.set_text_color(100, 116, 139)
+                pdf.cell(28, 4.5, d_text, align="R", new_x="LMARGIN", new_y="NEXT")
+                if e.get("sub"):
+                    pdf.set_x(body_x)
+                    pdf.set_font("Helvetica", "I", 8.5); pdf.set_text_color(71, 85, 105)
+                    pdf.multi_cell(body_w, 4, _latin(e["sub"]))
+                pdf.set_font("Helvetica", "", 8.8); pdf.set_text_color(40, 40, 40)
+                for b in e.get("bullets", []):
+                    pdf.set_x(body_x + 3)
+                    pdf.multi_cell(body_w - 3, 4, _latin(f"- {b}"))
+                pdf.ln(2)
+
+        # Education
+        if profile.get("education"):
+            pdf.set_x(body_x)
+            pdf.set_font("Helvetica", "B", 10.5); pdf.set_text_color(*accent_rgb)
+            pdf.cell(body_w, 5.5, "EDUCATION", new_x="LMARGIN", new_y="NEXT")
+            pdf.line(body_x, pdf.get_y(), body_x + body_w, pdf.get_y())
+            pdf.ln(2)
+
+            for ed in profile["education"]:
+                pdf.set_x(body_x)
+                pdf.set_font("Helvetica", "B", 9.5); pdf.set_text_color(15, 23, 42)
+                h_text = _latin(ed.get("heading", ""))
+                d_text = _latin(ed.get("date", ""))
+                pdf.cell(body_w - 28, 4.5, h_text)
+                pdf.set_font("Helvetica", "I", 8.5); pdf.set_text_color(100, 116, 139)
+                pdf.cell(28, 4.5, d_text, align="R", new_x="LMARGIN", new_y="NEXT")
+                if ed.get("sub"):
+                    pdf.set_x(body_x)
+                    pdf.set_font("Helvetica", "I", 8.5); pdf.set_text_color(71, 85, 105)
+                    pdf.multi_cell(body_w, 4, _latin(ed["sub"]))
+                pdf.ln(2)
+
+        data = bytes(pdf.output())
+        if path:
+            with open(path, "wb") as fh:
+                fh.write(data)
+        return data
+
+    # 2. STANDARD / BANNER / SERIF TEMPLATES
     for block in profile_to_blocks(profile):
         kind = block[0]
         if kind == "name":
             font("B", 20, block[1]); color_for(block[1], accent_rgb)
-            align_char = "L" if header_layout == "left" else "C"
+            align_char = "L" if header_layout in ("left", "dark_header") else "C"
             pdf.cell(0, 9, _latin(block[1]), align=align_char, new_x="LMARGIN", new_y="NEXT")
         elif kind == "contact":
             items, sep = [_latin(i) for i in block[1]], "   |   "
             font("", 9.5)
-            if header_layout == "left":
+            if header_layout in ("left", "dark_header"):
                 pdf.set_x(pdf.l_margin)
             else:
                 total = sum(pdf.get_string_width(i) for i in items) + pdf.get_string_width(sep) * (len(items) - 1)
@@ -447,7 +577,7 @@ def build_resume_pdf(profile: dict, path: str | None = None, template_id: str = 
             pdf.cell(lw, 5, label)
             font("", 10, block[2]); color_for(block[2])
             pdf.multi_cell(W - lw, 5, _latin(block[2]), new_x="LMARGIN", new_y="NEXT")
-            if pdf.get_y() == y0:  # safety
+            if pdf.get_y() == y0:
                 pdf.ln(5)
         elif kind == "entry":
             _, heading, date, sub = block
@@ -485,11 +615,17 @@ def build_resume_pdf(profile: dict, path: str | None = None, template_id: str = 
                 pdf.set_text_color(*bullet_fill)
                 font("B", 9.5)
                 pdf.text(x0 + 2, y0 + 3.8, "-")
-            else:  # disc or arrow
+            else:
                 pdf.ellipse(x0 + 2.2, y0 + 1.9, 1.2, 1.2, style="F")
             pdf.set_x(x0 + 6)
             font("", 10, block[1]); color_for(block[1])
             pdf.multi_cell(W - 6, 4.8, _latin(block[1]), new_x="LMARGIN", new_y="NEXT")
+
+    data = bytes(pdf.output())
+    if path:
+        with open(path, "wb") as fh:
+            fh.write(data)
+    return data
     data = bytes(pdf.output())
     if path:
         with open(path, "wb") as fh:

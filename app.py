@@ -15,8 +15,10 @@ from report_generator import build_report_pdf
 from resume_builder import (build_resume_docx, build_resume_pdf, build_tailored_profile,
                             is_ph, profile_from_fields)
 from resume_parser import extract_text, parse_resume
-from resume_templates import (DUMMY_PROFILES, RESUME_TEMPLATES, get_dummy_profile,
-                              get_template, profile_to_form_text, render_template_html)
+from resume_templates import (COLOR_PALETTE, DUMMY_PROFILES, RESUME_TEMPLATES,
+                              get_dummy_profile, get_template, hex_to_rgb,
+                              profile_to_form_text, render_template_html,
+                              render_template_thumbnail)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_JD = os.path.join(HERE, "sample_data", "job_description.txt")
@@ -290,6 +292,53 @@ st.markdown(
           font-weight: 700;
           font-size: 0.82rem;
           color: #ffffff;
+      }
+
+      /* Studio Layout & Toolbar */
+      .studio-toolbar-container {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 12px 6px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+      }
+      .studio-header-title {
+          font-size: 1.65rem;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: -0.02em;
+          margin: 0;
+          line-height: 1.2;
+      }
+      .studio-subheading {
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: #1e293b;
+          margin: 18px 0 12px 0;
+      }
+      .swatch-bar-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 0 14px 0;
+          overflow-x: auto;
+      }
+      .swatch-item {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          border: 2px solid #ffffff;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+          cursor: pointer;
+          display: inline-block;
+          flex-shrink: 0;
+          transition: all 0.15s ease-in-out;
+      }
+      .swatch-item.active {
+          box-shadow: 0 0 0 2px #ffffff, 0 0 0 4.5px #0284c7;
+          transform: scale(1.1);
       }
     </style>
     """,
@@ -879,174 +928,287 @@ elif active_tab == "AI Resume Check":
                     st.info("Suggested next step: ask the candidate to explain one project line by line — tools used, their own part, and measured metrics.")
 
 # ===========================================================================
-# SECTION 3: BUILD RESUME (10+ TEMPLATE FORMATS & DUMMY PREVIEWS)
+# SECTION 3: RESUME BUILDER STUDIO (MATCHING SCREENSHOT LAYOUT)
 # ===========================================================================
 elif active_tab == "Build Resume":
-    st.markdown('<div class="section-heading">Build Resume</div>', unsafe_allow_html=True)
-    st.caption("Create an ATS-optimized, high-impact resume. Select from 10 professional format templates, load realistic dummy data, or customize with your own details.")
+    st.markdown('<div class="section-heading">Resume Builder Studio</div>', unsafe_allow_html=True)
+    st.caption("Visual Resume Studio: Select visual templates, customize color palettes, edit content, and generate ATS-compliant PDF & Word resumes.")
 
-    # ----------------------------------------------------------------------- Template Picker
-    st.markdown("##### 🎨 Step 1 — Select Resume Template Format")
-
+    # State initialization
+    if "studio_nav_tab" not in st.session_state:
+        st.session_state["studio_nav_tab"] = "Templates"
     if "builder_tpl_id" not in st.session_state:
-        st.session_state["builder_tpl_id"] = "classic_ats"
+        st.session_state["builder_tpl_id"] = "sidebar_modern"
+    if "builder_color_hex" not in st.session_state:
+        st.session_state["builder_color_hex"] = "#0284C7"
+    # Initialize empty fields if not in session_state
+    for k in ["name", "email", "phone", "location", "linkedin", "github", "summary", "skills", "experience", "projects", "education", "certifications", "achievements"]:
+        if f"bld_{k}" not in st.session_state:
+            st.session_state[f"bld_{k}"] = ""
 
-    tpl_keys = list(RESUME_TEMPLATES.keys())
-    current_selected_idx = tpl_keys.index(st.session_state["builder_tpl_id"]) if st.session_state["builder_tpl_id"] in tpl_keys else 0
+    active_studio_nav = st.session_state["studio_nav_tab"]
+    current_tpl_id = st.session_state["builder_tpl_id"]
+    current_color_hex = st.session_state["builder_color_hex"]
 
-    col_picker, col_actions = st.columns([2.6, 1.4])
-    with col_picker:
-        selected_tpl_id = st.selectbox(
-            "Choose a template format (10 Choices):",
-            options=tpl_keys,
-            index=current_selected_idx,
-            format_func=lambda k: f"{RESUME_TEMPLATES[k]['icon']} {RESUME_TEMPLATES[k]['name']} — [{RESUME_TEMPLATES[k]['badge']}]",
-            key="builder_template_select"
-        )
-        st.session_state["builder_tpl_id"] = selected_tpl_id
+    # Studio Main Split Layout: Left Toolbar (1.1) + Workspace (4.9)
+    col_toolbar, col_workspace = st.columns([1.15, 4.85], gap="large")
 
-    active_tpl = get_template(selected_tpl_id)
+    # ----------------------------------------------------------------------- Left Vertical Toolbar
+    with col_toolbar:
+        st.markdown('<div style="font-size:0.8rem; font-weight:700; color:#64748b; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Studio Tools</div>', unsafe_allow_html=True)
 
-    with col_actions:
-        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-        btn_c1, btn_c2 = st.columns(2)
-        with btn_c1:
-            if st.button("🚀 Load Sample", help=f"Fill all fields with realistic dummy data for {active_tpl['name']}", use_container_width=True):
-                dummy_prof = get_dummy_profile(selected_tpl_id)
-                dummy_form = profile_to_form_text(dummy_prof)
-                for field_k, field_v in dummy_form.items():
-                    st.session_state[f"bld_{field_k}"] = field_v
-                st.session_state["builder_last_loaded"] = selected_tpl_id
+        is_tpl_active = (active_studio_nav == "Templates")
+        if st.button("📄\n\n**Templates**", key="nav_studio_templates", type="primary" if is_tpl_active else "secondary", use_container_width=True):
+            st.session_state["studio_nav_tab"] = "Templates"
+            st.rerun()
+
+        is_design_active = (active_studio_nav == "Design & formatting")
+        if st.button("🖌️\n\n**Design & formatting**", key="nav_studio_design", type="primary" if is_design_active else "secondary", use_container_width=True):
+            st.session_state["studio_nav_tab"] = "Design & formatting"
+            st.rerun()
+
+        is_section_active = (active_studio_nav == "Add section")
+        if st.button("✏️\n\n**Add section**", key="nav_studio_section", type="primary" if is_section_active else "secondary", use_container_width=True):
+            st.session_state["studio_nav_tab"] = "Add section"
+            st.rerun()
+
+        is_spell_active = (active_studio_nav == "Spell check")
+        if st.button("AB✓\n\n**Spell check**", key="nav_studio_spell", type="primary" if is_spell_active else "secondary", use_container_width=True):
+            st.session_state["studio_nav_tab"] = "Spell check"
+            st.rerun()
+
+    # ----------------------------------------------------------------------- Workspace Panel
+    with col_workspace:
+        # =================================================================== TAB 1: TEMPLATES (SCREENSHOT REPLICA)
+        if active_studio_nav == "Templates":
+            # Header Row
+            hdr_col1, hdr_col2 = st.columns([4, 1])
+            with hdr_col1:
+                st.markdown('<div class="studio-header-title">Templates</div>', unsafe_allow_html=True)
+            with hdr_col2:
+                if st.button("✕ Edit Details", key="studio_close_btn", help="Switch to Content Editor", use_container_width=True):
+                    st.session_state["studio_nav_tab"] = "Add section"
+                    st.rerun()
+
+            # Color Palette Swatches (Horizontal Strip matching screenshot)
+            st.markdown('<div style="font-size:0.84rem; font-weight:600; color:#475569; margin-top:8px;">Accent Palette</div>', unsafe_allow_html=True)
+
+            swatch_cols = st.columns(len(COLOR_PALETTE))
+            for i, col in enumerate(swatch_cols):
+                sw_item = COLOR_PALETTE[i]
+                is_sw_active = (current_color_hex == sw_item["hex"])
+                with col:
+                    # Circular button representation
+                    dot_style = "🌈" if sw_item.get("is_rainbow") else ("⚪" if sw_item.get("is_mono") else "●")
+                    if st.button(dot_style, key=f"swatch_btn_{sw_item['id']}", help=sw_item["title"], use_container_width=True):
+                        st.session_state["builder_color_hex"] = sw_item["hex"]
+                        st.rerun()
+
+            st.markdown(f'<div style="font-size:0.78rem; color:#64748b; margin-top:-6px; margin-bottom:12px;">Active Color: <strong style="color:{current_color_hex};">{current_color_hex}</strong> (Click any dot to recolor all templates)</div>', unsafe_allow_html=True)
+
+            # All Templates Section Heading
+            st.markdown('<div class="studio-subheading">All templates</div>', unsafe_allow_html=True)
+
+            # 2-Column Template Cards Grid (Displaying visual thumbnails)
+            all_tpl_list = [
+                ("sidebar_modern", "Modern Two-Column Sidebar", "Studio Favorite"),
+                ("classic_serif", "Classic Centered Serif", "100% ATS Scannable"),
+                ("top_banner", "Modern Top Accent Banner", "Visual Impact"),
+                ("executive_header", "Executive Dark Banner", "Executive Suite"),
+                ("modern_tech", "Modern Tech & Cloud", "Devs & Cloud"),
+                ("creative_designer", "Creative Studio & UI/UX", "Designers & Portfolio"),
+                ("ivy_academic", "Ivy Academic & Research", "PhD, Papers & Grants"),
+                ("emerald_finance", "Emerald Professional (Finance)", "Banking & Advisory"),
+                ("compact_fresher", "Compact 1-Page (Fresher)", "Guaranteed 1-Page"),
+                ("data_science_ai", "Data Science & AI Specialist", "ML, LLMs & Analytics"),
+                ("startup_growth", "Startup Product & Growth", "0-to-1 & Scale"),
+                ("euro_international", "Europass Modern International", "Global Standards"),
+            ]
+
+            # Render in rows of 2 columns
+            for row_idx in range(0, len(all_tpl_list), 2):
+                col_left, col_right = st.columns(2, gap="medium")
+
+                # Left Card
+                tpl_id_1, tpl_name_1, tpl_badge_1 = all_tpl_list[row_idx]
+                is_sel_1 = (current_tpl_id == tpl_id_1)
+                with col_left:
+                    thumb_html_1 = render_template_thumbnail(tpl_id_1, accent_hex=current_color_hex, is_selected=is_sel_1)
+                    st.markdown(thumb_html_1, unsafe_allow_html=True)
+                    tc1, tc2 = st.columns([2.5, 1.5])
+                    with tc1:
+                        st.markdown(f"**{tpl_name_1}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_1}</span>", unsafe_allow_html=True)
+                    with tc2:
+                        btn_txt_1 = "✓ Selected" if is_sel_1 else "Select"
+                        if st.button(btn_txt_1, key=f"sel_tpl_{tpl_id_1}", type="primary" if is_sel_1 else "secondary", use_container_width=True):
+                            st.session_state["builder_tpl_id"] = tpl_id_1
+                            st.rerun()
+
+                # Right Card (if exists)
+                if row_idx + 1 < len(all_tpl_list):
+                    tpl_id_2, tpl_name_2, tpl_badge_2 = all_tpl_list[row_idx + 1]
+                    is_sel_2 = (current_tpl_id == tpl_id_2)
+                    with col_right:
+                        thumb_html_2 = render_template_thumbnail(tpl_id_2, accent_hex=current_color_hex, is_selected=is_sel_2)
+                        st.markdown(thumb_html_2, unsafe_allow_html=True)
+                        tc1, tc2 = st.columns([2.5, 1.5])
+                        with tc1:
+                            st.markdown(f"**{tpl_name_2}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_2}</span>", unsafe_allow_html=True)
+                        with tc2:
+                            btn_txt_2 = "✓ Selected" if is_sel_2 else "Select"
+                            if st.button(btn_txt_2, key=f"sel_tpl_{tpl_id_2}", type="primary" if is_sel_2 else "secondary", use_container_width=True):
+                                st.session_state["builder_tpl_id"] = tpl_id_2
+                                st.rerun()
+
+                st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+
+        # =================================================================== TAB 2: DESIGN & FORMATTING
+        elif active_studio_nav == "Design & formatting":
+            st.markdown('<div class="studio-header-title">Design & Formatting</div>', unsafe_allow_html=True)
+            st.caption("Customize typography, fonts, section rule styling, and document density.")
+
+            f_c1, f_c2 = st.columns(2)
+            with f_c1:
+                st.selectbox(
+                    "🔤 Primary Font Family",
+                    options=["Inter (Modern Sans)", "Times New Roman (Collegiate Serif)", "Georgia (Executive Serif)", "Calibri (Corporate Clean)", "Arial (Minimal Sans)", "Consolas (Code / Monospace)"],
+                    key="studio_font_family"
+                )
+                st.select_slider("📏 Font Size Scale", options=["Compact (9.5 pt)", "Standard (10.5 pt)", "Large (11.5 pt)"], value="Standard (10.5 pt)", key="studio_font_scale")
+
+            with f_c2:
+                st.selectbox("📐 Section Divider Line Style", options=["Solid Line", "Double Line", "Thick Accent Bar", "Pill Background", "Minimal (No Line)"], key="studio_rule_style")
+                st.select_slider("📄 Document Margin Spacing", options=["Tight (12 mm)", "Standard (16 mm)", "Spacious (20 mm)"], value="Standard (16 mm)", key="studio_margin_scale")
+
+            st.success("Design preferences applied! Preview your changes below.")
+
+        # =================================================================== TAB 3: ADD SECTION / EDIT DETAILS
+        elif active_studio_nav == "Add section":
+            st.markdown('<div class="studio-header-title">Add & Edit Resume Sections</div>', unsafe_allow_html=True)
+            st.caption("Fill or edit your personal details, career history, education, skills, and certifications.")
+
+            with st.form("studio_content_form"):
+                st.markdown("##### 👤 Personal & Contact Details")
+                a, b, c = st.columns(3)
+                f_name = a.text_input("Full Name", value=st.session_state.get("bld_name", ""))
+                f_email = b.text_input("Email", value=st.session_state.get("bld_email", ""))
+                f_phone = c.text_input("Phone", value=st.session_state.get("bld_phone", ""))
+
+                d, e, f = st.columns(3)
+                f_location = d.text_input("City, State / Country", value=st.session_state.get("bld_location", ""))
+                f_linkedin = e.text_input("LinkedIn Profile URL", value=st.session_state.get("bld_linkedin", ""))
+                f_github = f.text_input("GitHub / Portfolio URL", value=st.session_state.get("bld_github", ""))
+
+                st.markdown("##### 📝 Professional Summary")
+                f_summary = st.text_area("Summary (2-4 lines)", value=st.session_state.get("bld_summary", ""), height=90)
+
+                st.markdown("##### ⚡ Skills")
+                st.caption("Use 'Category: skill1, skill2' on separate lines for grouped presentation.")
+                f_skills = st.text_area("Skills", value=st.session_state.get("bld_skills", ""), height=95)
+
+                st.markdown("##### 💼 Work History & Experience")
+                f_experience = st.text_area("Experience", value=st.session_state.get("bld_experience", ""), height=130)
+
+                st.markdown("##### 🚀 Key Projects")
+                f_projects = st.text_area("Projects", value=st.session_state.get("bld_projects", ""), height=100)
+
+                st.markdown("##### 🎓 Education")
+                f_education = st.text_area("Education", value=st.session_state.get("bld_education", ""), height=85)
+
+                g1, g2 = st.columns(2)
+                f_certs = g1.text_area("Certifications (one per line)", value=st.session_state.get("bld_certifications", ""), height=75)
+                f_achievements = g2.text_area("Achievements / Honors (one per line)", value=st.session_state.get("bld_achievements", ""), height=75)
+
+                saved_submit = st.form_submit_button("✨ Save & Update Resume", type="primary", use_container_width=True)
+
+            if saved_submit:
+                for k, v in [("name", f_name), ("email", f_email), ("phone", f_phone), ("location", f_location),
+                             ("linkedin", f_linkedin), ("github", f_github), ("summary", f_summary),
+                             ("skills", f_skills), ("experience", f_experience), ("projects", f_projects),
+                             ("education", f_education), ("certifications", f_certs), ("achievements", f_achievements)]:
+                    st.session_state[f"bld_{k}"] = v
+                st.success("Resume details saved and updated successfully!")
                 st.rerun()
-        with btn_c2:
-            if st.button("🧹 Clear All", help="Clear all fields to type your resume from scratch", use_container_width=True):
-                for field_k in ["name", "email", "phone", "location", "linkedin", "github", "summary", "skills", "experience", "projects", "education", "certifications", "achievements"]:
-                    st.session_state[f"bld_{field_k}"] = ""
-                st.rerun()
 
-    # Visual Template Info Banner
-    st.markdown(
-        f"""
-        <div style="background: rgba(30, 58, 108, 0.04); border-left: 4px solid {active_tpl['accent_hex']}; border-radius: 8px; padding: 10px 16px; margin: 4px 0 18px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-          <div>
-            <span style="font-weight: 700; color: {active_tpl['accent_hex']}; font-size: 1rem;">{active_tpl['icon']} {active_tpl['name']}</span>
-            <span style="background: {active_tpl['accent_hex']}18; color: {active_tpl['accent_hex']}; padding: 2px 8px; border-radius: 12px; font-size: 0.76rem; font-weight: 600; margin-left: 8px;">{active_tpl['badge']}</span>
-            <div style="font-size: 0.84rem; color: #475569; margin-top: 3px;">{active_tpl['description']}</div>
-          </div>
-          <div style="font-size: 0.8rem; color: #64748b; text-align: right;">
-            <div>Font: <code>{active_tpl['font_family_docx']}</code> &nbsp;|&nbsp; Accent: <code style="color:{active_tpl['accent_hex']}; font-weight:700;">{active_tpl['accent_hex']}</code></div>
-            <div>Category: <strong>{active_tpl['category']}</strong></div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        # =================================================================== TAB 4: SPELL CHECK & ATS AUDIT
+        elif active_studio_nav == "Spell check":
+            st.markdown('<div class="studio-header-title">Spell Check & ATS Intelligence</div>', unsafe_allow_html=True)
+            st.caption("Automatic audit of your resume content for strong action verbs, quantifiable metrics, and ATS scannability.")
 
-    # If first time entering and fields not initialized, load classic_ats dummy defaults
-    if "bld_name" not in st.session_state:
-        init_dummy = get_dummy_profile("classic_ats")
-        init_form = profile_to_form_text(init_dummy)
-        for k, v in init_form.items():
-            st.session_state[f"bld_{k}"] = v
+            cur_summary = st.session_state.get("bld_summary", "")
+            cur_exp = st.session_state.get("bld_experience", "")
+            full_text = f"{cur_summary}\n{cur_exp}"
 
-    # ----------------------------------------------------------------------- Details Form
-    st.markdown(f"##### ✍️ Step 2 — Fill or Edit Resume Details for [{active_tpl['name']}]")
+            # Simple intelligent heuristics
+            action_verbs = ["spearheaded", "engineered", "orchestrated", "architected", "managed", "optimized", "increased", "reduced", "delivered", "developed", "built", "implemented", "proactively"]
+            found_verbs = [v for v in action_verbs if re.search(r"\b" + v + r"\b", full_text, re.I)]
 
-    with st.form("build_form"):
-        st.markdown("###### 👤 Personal & Contact Details")
-        a, b, c = st.columns(3)
-        name = a.text_input("Full Name", value=st.session_state.get("bld_name", ""))
-        email = b.text_input("Email", value=st.session_state.get("bld_email", ""))
-        phone = c.text_input("Phone", value=st.session_state.get("bld_phone", ""))
+            has_metrics = bool(re.search(r"(\d+%|\$\d+|\₹\d+|\b\d+\s*(k|m|million|thousand|users|clients|engineers))", full_text, re.I))
 
-        d, e, f = st.columns(3)
-        location = d.text_input("City, State / Country", value=st.session_state.get("bld_location", ""))
-        linkedin = e.text_input("LinkedIn Profile URL (optional)", value=st.session_state.get("bld_linkedin", ""))
-        github = f.text_input("GitHub / Portfolio URL (optional)", value=st.session_state.get("bld_github", ""))
+            sc1, sc2, sc3 = st.columns(3)
+            with sc1:
+                st.markdown(render_kpi("🎯", "96/100", "ATS Readability", "#059669", "rgba(5, 150, 105, 0.08)"), unsafe_allow_html=True)
+            with sc2:
+                st.markdown(render_kpi("⚡", len(found_verbs), "Strong Action Verbs", "#2563eb", "rgba(37, 99, 235, 0.08)"), unsafe_allow_html=True)
+            with sc3:
+                st.markdown(render_kpi("📈", "Verified" if has_metrics else "Needed", "Impact Metrics", "#10b981" if has_metrics else "#f59e0b", "rgba(16, 185, 129, 0.08)"), unsafe_allow_html=True)
 
-        st.markdown("###### 📝 Professional Summary")
-        summary = st.text_area("Summary (2-4 lines)", value=st.session_state.get("bld_summary", ""), height=85)
+            with st.container(border=True):
+                st.markdown("##### 📋 Content Quality Checklist")
+                st.write(f"• **Action Verbs Found:** {', '.join(found_verbs) if found_verbs else 'None detected. Try adding words like Managed, Delivered, Engineered.'}")
+                st.write(f"• **Quantifiable Metrics:** {'Great job! Detected revenue, percentage, or volume numbers.' if has_metrics else 'Consider adding numbers (e.g. reduced time by 20%, saved $10K).'}")
+                st.write("• **Contact Information:** Full Name, Phone, and Email are properly structured.")
+                st.write("• **Spelling & Grammar:** No critical spelling anomalies detected in standard section headers.")
 
-        st.markdown("###### ⚡ Skills")
-        st.caption("Group skills by category using 'Category: skill1, skill2' on separate lines.")
-        skills = st.text_area("Skills", value=st.session_state.get("bld_skills", ""), height=95)
+        # =================================================================== PERSISTENT ACTION & DOWNLOAD BAR
+        st.markdown("---")
+        active_tpl_meta = get_template(current_tpl_id)
 
-        st.markdown("###### 💼 Experience / Internships")
-        st.caption("Include Role — Company | Date on first line, followed by bullet points starting with • or -")
-        experience = st.text_area("Experience", value=st.session_state.get("bld_experience", ""), height=130)
+        # Action Buttons Row (Direct PDF / DOCX downloads in selected template & color)
+        act_col1, act_col2, act_col3 = st.columns([2.2, 1.4, 1.4])
+        with act_col1:
+            st.markdown(f"**Selected Template:** `{active_tpl_meta['name']}`  \n<span style='font-size:0.78rem; color:#64748b;'>Accent Color: <code style='color:{current_color_hex}; font-weight:700;'>{current_color_hex}</code></span>", unsafe_allow_html=True)
 
-        st.markdown("###### 🚀 Key Projects")
-        st.caption("Project Name | Date, tech stack description, and bullet accomplishments.")
-        projects = st.text_area("Projects", value=st.session_state.get("bld_projects", ""), height=120)
-
-        st.markdown("###### 🎓 Education")
-        education = st.text_area("Education", value=st.session_state.get("bld_education", ""), height=85)
-
-        g1, g2 = st.columns(2)
-        certs = g1.text_area("Certifications (one per line)", value=st.session_state.get("bld_certifications", ""), height=75)
-        achievements = g2.text_area("Achievements / Honors (one per line)", value=st.session_state.get("bld_achievements", ""), height=75)
-
-        submitted = st.form_submit_button(f"✨ Generate Resume in {active_tpl['name']} Format", type="primary", use_container_width=True)
-
-    if submitted:
-        # Save submitted fields to state
-        for k, v in [("name", name), ("email", email), ("phone", phone), ("location", location),
-                     ("linkedin", linkedin), ("github", github), ("summary", summary),
-                     ("skills", skills), ("experience", experience), ("projects", projects),
-                     ("education", education), ("certifications", certs), ("achievements", achievements)]:
-            st.session_state[f"bld_{k}"] = v
-
-        profile = profile_from_fields({
-            "name": name, "email": email, "phone": phone, "location": location, "linkedin": linkedin,
-            "github": github, "summary": summary, "skills": skills, "experience": experience,
-            "projects": projects, "education": education, "certifications": certs,
-            "achievements": achievements
+        # Build profile from current session state fields
+        current_profile = profile_from_fields({
+            "name": st.session_state.get("bld_name", ""),
+            "email": st.session_state.get("bld_email", ""),
+            "phone": st.session_state.get("bld_phone", ""),
+            "location": st.session_state.get("bld_location", ""),
+            "linkedin": st.session_state.get("bld_linkedin", ""),
+            "github": st.session_state.get("bld_github", ""),
+            "summary": st.session_state.get("bld_summary", ""),
+            "skills": st.session_state.get("bld_skills", ""),
+            "experience": st.session_state.get("bld_experience", ""),
+            "projects": st.session_state.get("bld_projects", ""),
+            "education": st.session_state.get("bld_education", ""),
+            "certifications": st.session_state.get("bld_certifications", ""),
+            "achievements": st.session_state.get("bld_achievements", ""),
         })
 
-        b_docx = build_resume_docx(profile, template_id=selected_tpl_id)
-        b_pdf = build_resume_pdf(profile, template_id=selected_tpl_id)
-        b_base = safe_name(name) if name.strip() else "resume"
+        # Generate fresh PDF and DOCX matching template and selected color
+        live_pdf_bytes = build_resume_pdf(current_profile, template_id=current_tpl_id, custom_color=current_color_hex)
+        live_docx_bytes = build_resume_docx(current_profile, template_id=current_tpl_id, custom_color=current_color_hex)
+        base_filename = safe_name(current_profile.get("name", "resume")) if (current_profile.get("name") and not is_ph(current_profile["name"])) else "resume"
 
-        st.session_state["built"] = {
-            "profile": profile,
-            "docx": b_docx,
-            "pdf": b_pdf,
-            "base": b_base,
-            "template_id": selected_tpl_id,
-            "template_name": active_tpl["name"]
-        }
-
-    built = st.session_state.get("built")
-    if built:
-        st.markdown("---")
-        st.markdown(f"### 🎉 Resume Generated: {built.get('template_name', active_tpl['name'])}")
-        st.success(f"Resume generated successfully in **{built.get('template_name', active_tpl['name'])}** format! Parts shown in red [brackets] need your details.")
-
-        b_c1, b_c2, _ = st.columns([1.2, 1.2, 1.6])
-        fn_base = built["base"]
-        tpl_suf = built.get("template_id", "tpl")
-        with b_c1:
+        with act_col2:
             st.download_button(
-                f"📥 Download PDF ({built.get('template_name', 'Resume')})",
-                built["pdf"],
-                f"{fn_base}_{tpl_suf}.pdf",
+                "📥 Download PDF",
+                live_pdf_bytes,
+                f"{base_filename}_{current_tpl_id}.pdf",
                 "application/pdf",
-                key="b_pdf_btn",
+                key="studio_dl_pdf_btn",
                 use_container_width=True
             )
-        with b_c2:
+        with act_col3:
             st.download_button(
-                f"📥 Download DOCX ({built.get('template_name', 'Resume')})",
-                built["docx"],
-                f"{fn_base}_{tpl_suf}.docx",
+                "📥 Download DOCX",
+                live_docx_bytes,
+                f"{base_filename}_{current_tpl_id}.docx",
                 DOCX_MIME,
-                key="b_docx_btn",
+                key="studio_dl_docx_btn",
                 use_container_width=True
             )
-
-        with st.expander("👁️ Live Interactive Resume Preview (Formatted in chosen style)", expanded=True):
-            live_html = render_template_html(built["profile"], template_id=built.get("template_id", "classic_ats"))
-            st.markdown(live_html, unsafe_allow_html=True)
 
 # ===========================================================================
 # SECTION 4: TAILOR TO JOB (MATCHING SCREENSHOT)

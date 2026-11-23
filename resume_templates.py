@@ -1,41 +1,130 @@
 """Resume Templates Engine for Parakh AI.
 
-Provides 10+ professional, ATS-optimized resume templates with:
+Provides professional, ATS-optimized resume templates with:
 - Visual styling rules (colors, fonts, header layouts, borders, bullet styles)
-- Full realistic dummy profiles for each persona
-- Helpers to convert profiles to form fields and render live interactive HTML previews.
+- Full realistic dummy profiles for each persona (including Saanvi Patel from the Studio preview)
+- Helpers to convert profiles to form fields and render live interactive HTML previews
+- Thumbnail card generator matching the modern Studio design
 """
 from __future__ import annotations
 
 import re
 
 # ---------------------------------------------------------------------------
+# COLOR PALETTE (MATCHING SCREENSHOT COLOR SWATCH BAR)
+# ---------------------------------------------------------------------------
+COLOR_PALETTE = [
+    {"id": "rainbow", "name": "Default Theme", "hex": "#0284C7", "is_rainbow": True, "title": "Rainbow Palette"},
+    {"id": "charcoal", "name": "Charcoal Slate", "hex": "#52525B", "rgb": (82, 82, 91), "title": "Charcoal"},
+    {"id": "navy", "name": "Deep Royal Navy", "hex": "#1E3A8A", "rgb": (30, 58, 138), "title": "Royal Navy"},
+    {"id": "purple", "name": "Royal Violet", "hex": "#7C3AED", "rgb": (124, 58, 237), "title": "Purple"},
+    {"id": "blue", "name": "Cerulean Blue", "hex": "#0284C7", "rgb": (2, 132, 199), "title": "Cerulean Blue"},
+    {"id": "teal", "name": "Emerald Teal", "hex": "#0D9488", "rgb": (13, 148, 136), "title": "Teal"},
+    {"id": "green", "name": "Forest Green", "hex": "#15803D", "rgb": (21, 128, 61), "title": "Forest Green"},
+    {"id": "rust", "name": "Brick Crimson", "hex": "#991B1B", "rgb": (153, 27, 27), "title": "Rust / Red"},
+    {"id": "coral", "name": "Sunset Coral", "hex": "#FB923C", "rgb": (251, 146, 60), "title": "Coral / Peach"},
+    {"id": "yellow", "name": "Amber Gold", "hex": "#F59E0B", "rgb": (245, 158, 11), "title": "Golden Yellow"},
+    {"id": "monochrome", "name": "Minimalist Black", "hex": "#18181B", "rgb": (24, 24, 27), "is_mono": True, "title": "No Color / Monochrome"},
+]
+
+
+def hex_to_rgb(hex_str: str) -> tuple[int, int, int]:
+    """Convert hex string (e.g. #0284C7) to RGB tuple."""
+    hex_str = hex_str.lstrip("#")
+    if len(hex_str) == 6:
+        return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+    return (31, 56, 100)
+
+
+# ---------------------------------------------------------------------------
 # TEMPLATE DEFINITIONS & METADATA
 # ---------------------------------------------------------------------------
 RESUME_TEMPLATES = {
-    "classic_ats": {
-        "id": "classic_ats",
-        "name": "Classic ATS Standard",
+    # 1. TOP-LEFT FROM USER SCREENSHOT
+    "sidebar_modern": {
+        "id": "sidebar_modern",
+        "name": "Modern Two-Column Sidebar",
+        "badge": "Studio Favorite",
+        "category": "Modern / Two-Column",
+        "icon": "📄",
+        "accent_hex": "#0284C7",
+        "secondary_hex": "#1E3A8A",
+        "accent_rgb": (2, 132, 199),
+        "secondary_rgb": (30, 58, 138),
+        "font_family_pdf": "Helvetica",
+        "font_family_docx": "Arial",
+        "font_family_css": "'Inter', 'Segoe UI', sans-serif",
+        "header_layout": "sidebar",
+        "rule_style": "thick",
+        "bullet_style": "disc",
+        "bullet_char": "•",
+        "description": "Two-column design featuring a prominent left-hand sidebar with photo silhouette, contact info, and skills, paired with clean timeline content on the right.",
+    },
+    # 2. TOP-RIGHT FROM USER SCREENSHOT
+    "classic_serif": {
+        "id": "classic_serif",
+        "name": "Classic Centered Serif",
         "badge": "100% ATS Scannable",
-        "category": "Universal / Corporate",
+        "category": "Traditional / ATS",
         "icon": "🏛️",
         "accent_hex": "#1F3864",
-        "secondary_hex": "#4B5563",
+        "secondary_hex": "#334155",
         "accent_rgb": (31, 56, 100),
-        "secondary_rgb": (75, 85, 99),
-        "font_family_pdf": "Helvetica",
-        "font_family_docx": "Calibri",
-        "font_family_css": "'Calibri', 'Inter', sans-serif",
+        "secondary_rgb": (51, 65, 85),
+        "font_family_pdf": "Times",
+        "font_family_docx": "Georgia",
+        "font_family_css": "'Times New Roman', 'Georgia', serif",
         "header_layout": "center",
         "rule_style": "solid",
         "bullet_style": "disc",
         "bullet_char": "•",
-        "description": "Standard corporate single-column format with navy headers and strict ATS-first scannability. Works with every HR screening system.",
+        "description": "Timeless centered serif header with crisp horizontal rules, dual-column skill bullets, and structured career timeline. Highest scannability across enterprise ATS.",
     },
+    # 3. BOTTOM-LEFT FROM USER SCREENSHOT
+    "top_banner": {
+        "id": "top_banner",
+        "name": "Modern Top Accent Banner",
+        "badge": "Visual Impact",
+        "category": "Contemporary / Banner",
+        "icon": "🎨",
+        "accent_hex": "#15803D",
+        "secondary_hex": "#14532D",
+        "accent_rgb": (21, 128, 61),
+        "secondary_rgb": (20, 83, 45),
+        "font_family_pdf": "Helvetica",
+        "font_family_docx": "Calibri",
+        "font_family_css": "'Inter', 'Calibri', sans-serif",
+        "header_layout": "top_banner",
+        "rule_style": "pill",
+        "bullet_style": "disc",
+        "bullet_char": "•",
+        "description": "Full-width colored banner across the top highlighting candidate name and profile photo, with dual-subcolumn layout below for contact, education, and career history.",
+    },
+    # 4. BOTTOM-RIGHT FROM USER SCREENSHOT
+    "executive_header": {
+        "id": "executive_header",
+        "name": "Executive Dark Banner",
+        "badge": "Executive Suite",
+        "category": "Management / Executive",
+        "icon": "👑",
+        "accent_hex": "#1E293B",
+        "secondary_hex": "#F59E0B",
+        "accent_rgb": (30, 41, 59),
+        "secondary_rgb": (245, 158, 11),
+        "font_family_pdf": "Helvetica",
+        "font_family_docx": "Georgia",
+        "font_family_css": "'Georgia', 'Inter', sans-serif",
+        "header_layout": "dark_header",
+        "rule_style": "double",
+        "bullet_style": "square",
+        "bullet_char": "▪",
+        "description": "Distinguished dark charcoal header with gold accent divider line, prominent candidate credentials, and diamond-bulleted achievement sections.",
+    },
+    # 5. MODERN TECH & CLOUD
     "modern_tech": {
         "id": "modern_tech",
         "name": "Modern Tech & Cloud",
-        "badge": "Popular for Developers",
+        "badge": "Devs & Cloud",
         "category": "Engineering & IT",
         "icon": "⚡",
         "accent_hex": "#0284C7",
@@ -49,33 +138,15 @@ RESUME_TEMPLATES = {
         "rule_style": "thick",
         "bullet_style": "arrow",
         "bullet_char": "▸",
-        "description": "Clean modern layout designed for Software, DevOps, and Cloud engineers. Highlights tech stacks, GitHub/portfolio links, and scalable impact.",
+        "description": "Engineered for Software, DevOps, and Cloud specialists. High-density technical skill grouping, GitHub links, and scalable impact bullets.",
     },
-    "executive_suite": {
-        "id": "executive_suite",
-        "name": "Executive Leadership & VP",
-        "badge": "Director & VP Roles",
-        "category": "Management & Strategy",
-        "icon": "👑",
-        "accent_hex": "#1E293B",
-        "secondary_hex": "#B45309",
-        "accent_rgb": (30, 41, 59),
-        "secondary_rgb": (180, 83, 9),
-        "font_family_pdf": "Helvetica",
-        "font_family_docx": "Georgia",
-        "font_family_css": "'Georgia', serif",
-        "header_layout": "split",
-        "rule_style": "double",
-        "bullet_style": "square",
-        "bullet_char": "▪",
-        "description": "High-authority presentation for CXOs, VPs, and Engineering Directors. Features executive summary prominence and strategic business metrics.",
-    },
+    # 6. CREATIVE DESIGNER
     "creative_designer": {
         "id": "creative_designer",
         "name": "Creative Studio & UI/UX",
-        "badge": "Designers & Product",
+        "badge": "Designers & Portfolio",
         "category": "Design & Creative",
-        "icon": "🎨",
+        "icon": "🖌️",
         "accent_hex": "#7C3AED",
         "secondary_hex": "#4C1D95",
         "accent_rgb": (124, 58, 237),
@@ -87,12 +158,13 @@ RESUME_TEMPLATES = {
         "rule_style": "pill",
         "bullet_style": "circle",
         "bullet_char": "●",
-        "description": "Vibrant violet aesthetic crafted for UI/UX Designers, Creative Leads, and Product Thinkers with problem-solution-impact narratives.",
+        "description": "Vibrant violet and creative aesthetic crafted for UI/UX Designers, Product Thinkers, and Brand Marketers with problem-solution narratives.",
     },
+    # 7. IVY ACADEMIC & RESEARCH
     "ivy_academic": {
         "id": "ivy_academic",
         "name": "Ivy Academic & Research",
-        "badge": "PhD, R&D & Papers",
+        "badge": "PhD, Papers & Grants",
         "category": "Academia & Research",
         "icon": "🎓",
         "accent_hex": "#881337",
@@ -106,12 +178,13 @@ RESUME_TEMPLATES = {
         "rule_style": "solid",
         "bullet_style": "dash",
         "bullet_char": "-",
-        "description": "Traditional collegiate serif typography. Places Education, Research Publications, Peer Reviews, and Grant funding front and center.",
+        "description": "Collegiate serif typography prioritizing Education, Peer-reviewed Publications, Research Fellowships, and Grant awards.",
     },
+    # 8. EMERALD FINANCE & CONSULTING
     "emerald_finance": {
         "id": "emerald_finance",
         "name": "Emerald Professional (Finance)",
-        "badge": "Consulting & Banking",
+        "badge": "Banking & Advisory",
         "category": "Finance & Consulting",
         "icon": "📈",
         "accent_hex": "#065F46",
@@ -125,13 +198,14 @@ RESUME_TEMPLATES = {
         "rule_style": "solid",
         "bullet_style": "disc",
         "bullet_char": "•",
-        "description": "Structured high-rigor layout tailored for Investment Banking, Management Consulting, Big 4 auditing, and Financial Risk Analytics.",
+        "description": "High-rigor structure for Investment Banking, Management Consulting, Big 4 auditing, and Quantitative Risk Analytics.",
     },
+    # 9. COMPACT FRESHER (1-PAGE)
     "compact_fresher": {
         "id": "compact_fresher",
         "name": "Compact 1-Page (Fresher)",
         "badge": "Guaranteed 1-Page",
-        "category": "Students & New Grads",
+        "category": "Students & Entry-Level",
         "icon": "🌱",
         "accent_hex": "#0D9488",
         "secondary_hex": "#115E59",
@@ -144,8 +218,9 @@ RESUME_TEMPLATES = {
         "rule_style": "minimal",
         "bullet_style": "disc",
         "bullet_char": "•",
-        "description": "Space-optimized layout with tight vertical rhythm, zero wasted margin, and immediate visibility for Academic Projects, Coursework & Degrees.",
+        "description": "Space-optimized layout with tight vertical rhythm, zero wasted margin, and high visibility for Academic Projects, Degrees & Coursework.",
     },
+    # 10. DATA SCIENCE & AI
     "data_science_ai": {
         "id": "data_science_ai",
         "name": "Data Science & AI Specialist",
@@ -163,8 +238,9 @@ RESUME_TEMPLATES = {
         "rule_style": "thick",
         "bullet_style": "arrow",
         "bullet_char": "▸",
-        "description": "Tech-forward format designed for ML Engineers and Data Scientists. Dedicated structure for Frameworks, Models Deployed, and Benchmark Scores.",
+        "description": "Tech-forward format with dedicated sections for Frameworks, LLM/ML Models Deployed, Kaggle achievements, and Benchmark Scores.",
     },
+    # 11. STARTUP PRODUCT & GROWTH
     "startup_growth": {
         "id": "startup_growth",
         "name": "Startup Product & Growth",
@@ -182,8 +258,9 @@ RESUME_TEMPLATES = {
         "rule_style": "pill",
         "bullet_style": "disc",
         "bullet_char": "•",
-        "description": "Action-oriented resume emphasizing KPI growth, conversion percentage increases, agile sprints, and 0-to-1 product launches.",
+        "description": "Action-oriented layout highlighting KPI growth, conversion percentage increases, agile sprints, and 0-to-1 product launches.",
     },
+    # 12. EUROPASS INTERNATIONAL
     "euro_international": {
         "id": "euro_international",
         "name": "Europass Modern International",
@@ -201,77 +278,190 @@ RESUME_TEMPLATES = {
         "rule_style": "solid",
         "bullet_style": "dash",
         "bullet_char": "-",
-        "description": "Standardized international layout compatible with UK, European, Middle East, and APAC recruitment expectations, featuring multilingual clarity.",
+        "description": "Standardized international layout compatible with UK, European, Middle East, and APAC recruitment expectations.",
     },
 }
 
 # ---------------------------------------------------------------------------
-# REALISTIC DUMMY PROFILES (ONE PER TEMPLATE PERSONA)
+# REALISTIC DUMMY PROFILES
 # ---------------------------------------------------------------------------
 DUMMY_PROFILES = {
-    "classic_ats": {
-        "name": "Rahul Sharma",
-        "email": "rahul.sharma@example.com",
-        "phone": "+91 98765 43210",
-        "location": "Bengaluru, India",
-        "linkedin": "linkedin.com/in/rahul-sharma-ops",
+    # SAANVI PATEL (EXACT PROFILE FROM SCREENSHOT)
+    "sidebar_modern": {
+        "name": "Saanvi Patel",
+        "email": "saanvipatel@sample.in",
+        "phone": "+91 97170 54977",
+        "location": "New Delhi, India 110014",
+        "linkedin": "linkedin.com/in/saanvi-patel-sales",
         "github": "",
-        "summary": "Results-oriented Operations & Business Analyst with 5+ years of experience streamlining enterprise workflows, reducing operational costs by 22%, and managing cross-functional stakeholder reporting.",
+        "summary": "Motivated Retail Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service. Resourceful expert at training customer needs, directing to desirable merchandise and upselling to meet sales quotas. Committed to strengthening customer experience with positivity and professionalism when answering inquiries and processing sales.",
         "skills": {
-            "Core Competencies": ["Business Analysis", "Process Automation", "Agile & Scrum", "Root Cause Analysis"],
-            "Analytics & Data": ["Advanced SQL", "Tableau", "Power BI", "Excel / VBA", "Python (Pandas)"],
-            "Tools & Methods": ["Jira", "Confluence", "SAP ERP", "Six Sigma Green Belt", "BPMN 2.0"],
+            "Core Skills": ["Stock opening and closing", "Sales expertise", "Accurate Money Handling", "Store Merchandising", "Loss prevention", "Product promotions"],
+            "Customer Operations": ["POS Terminal Operation", "Inventory Audits", "Customer Retention", "Conflict Resolution", "Merchandising Displays"],
         },
-        "experience": [
-            {
-                "heading": "Senior Business Analyst — NexaTech Solutions",
-                "date": "Jun 2022 - Present",
-                "sub": "Bengaluru, Karnataka",
-                "bullets": [
-                    "Spearheaded supply chain analytics migration to Snowflake, decreasing query execution latency by 45%.",
-                    "Authored 30+ comprehensive BRDs and functional spec documents for automated invoice matching.",
-                    "Collaborated with product teams to eliminate operational bottlenecks, saving $180K annually.",
-                ],
-            },
-            {
-                "heading": "Operations Analyst — Apex Global Systems",
-                "date": "Aug 2019 - May 2022",
-                "sub": "Hyderabad, Telangana",
-                "bullets": [
-                    "Monitored and optimized weekly performance KPIs across 4 regional service fulfillment centers.",
-                    "Built 12 automated Power BI executive reporting dashboards refreshed via scheduled SQL pipelines.",
-                    "Awarded 'Excellence in Analytics' for identifying $65K in vendor billing discrepancies.",
-                ],
-            },
-        ],
-        "projects": [
-            {
-                "heading": "Enterprise Resource Forecast Engine",
-                "date": "Jan 2023 - Mar 2023",
-                "sub": "Python, SQL, Tableau",
-                "bullets": [
-                    "Engineered predictive staffing model forecasting seasonal customer service workloads with 91% accuracy.",
-                    "Reduced emergency staffing contract expenses by 28% across two fiscal quarters.",
-                ],
-            }
-        ],
         "education": [
             {
-                "heading": "Bachelor of Technology in Information Technology — NIT Karnataka",
-                "date": "2015 - 2019",
-                "sub": "CGPA: 8.4 / 10",
+                "heading": "Diploma: Financial Accounting — Oxford Software Institute & Oxford School of English",
+                "date": "June 2016",
+                "sub": "New Delhi, Delhi, India",
                 "bullets": [],
             }
         ],
+        "experience": [
+            {
+                "heading": "Retail Sales Associate — ABC Retail Store",
+                "date": "07/2016 - Current",
+                "sub": "New Delhi, Delhi",
+                "bullets": [
+                    "Proactively upsold products by introducing accessories and other add-ons, adding ₹8,000 to average monthly sales.",
+                    "Maintained positive customer satisfaction scores exceeding 94% across quarterly mystery shopper audits.",
+                    "Controlled inventory movement and accurately processed high-volume point-of-sale transactions during peak festival seasons.",
+                ],
+            },
+            {
+                "heading": "Cashier — Starbucks",
+                "date": "2015-01 - 2016-05",
+                "sub": "New Delhi, India",
+                "bullets": [
+                    "Greeted customers warmly and maintained high customer satisfaction scores.",
+                    "Learned every drink preparation and memorized all label details to answer all customer needs.",
+                    "Upsold baked goods and extra shots with beverages, increasing daily unit sales.",
+                ],
+            },
+        ],
+        "projects": [],
         "certifications": [
-            "Certified ScrumMaster (CSM) — Scrum Alliance (2023)",
-            "Six Sigma Green Belt Certified (2021)",
+            "Customer Service Excellence Certificate (Retailers Association of India, 2018)",
+            "Diploma in Computer Financial Accounting (Tally ERP 9)",
         ],
         "achievements": [
-            "Ranked top 5% among 200+ analysts across annual APAC performance review",
-            "Published internal whitepaper on Automated Data Validation Protocols",
+            "Awarded 'Employee of the Month' twice for outstanding quarterly upselling performance",
+            "Achieved zero cash drawer discrepancy record across 18 consecutive months",
         ],
     },
+    # CLASSIC SERIF (SAANVI PATEL SERIF EDITION)
+    "classic_serif": {
+        "name": "Saanvi Patel",
+        "email": "saanvipatel@sample.in",
+        "phone": "+91 97170 54977",
+        "location": "New Delhi, India 110014",
+        "linkedin": "linkedin.com/in/saanvi-patel-sales",
+        "github": "",
+        "summary": "Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service. Resourceful expert at identifying customer needs, directing to desirable merchandise, and upselling to meet sales quotas. Committed to strengthening customer experience with positivity and professionalism.",
+        "skills": {
+            "Sales & Operations": ["Stock opening and closing", "Sales expertise", "Accurate Money Handling", "Store Merchandising"],
+            "Customer Service": ["Loss prevention", "Product promotions", "POS Systems", "Conflict Resolution"],
+        },
+        "education": [
+            {
+                "heading": "Diploma: Financial Accounting — Oxford Software Institute",
+                "date": "June 2016",
+                "sub": "Oxford School of English, New Delhi, India",
+                "bullets": [],
+            }
+        ],
+        "experience": [
+            {
+                "heading": "Retail Sales Associate — ABC Store",
+                "date": "07/2016 - Current",
+                "sub": "New Delhi, Delhi",
+                "bullets": [
+                    "Proactively upsold products by introducing accessories, adding ₹8,000 to average monthly sales.",
+                    "Consistently scored 95%+ in quarterly customer satisfaction reviews.",
+                    "Maintained safe money handling and zero drawer discrepancies.",
+                ],
+            },
+            {
+                "heading": "Cashier — Starbucks Coffee",
+                "date": "2015-01 - 2016-05",
+                "sub": "New Delhi, India",
+                "bullets": [
+                    "Greeted over 60 clients per hour with consistently positive feedback.",
+                    "Promoted high-margin combo items, increasing store add-on sales by ₹3,000 per month.",
+                ],
+            },
+        ],
+        "projects": [],
+        "certifications": [
+            "Customer Service Excellence Award (2018)",
+        ],
+        "achievements": [
+            "Ranked top sales associate for North Zone retail stores in 2021",
+        ],
+    },
+    # TOP BANNER
+    "top_banner": {
+        "name": "Saanvi Patel",
+        "email": "saanvipatel@sample.in",
+        "phone": "+91 97170 54977",
+        "location": "New Delhi, India 110014",
+        "linkedin": "linkedin.com/in/saanvi-patel-sales",
+        "github": "",
+        "summary": "Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service. Resourceful expert at training customer needs, directing to desirable merchandise and upselling.",
+        "skills": {
+            "Core Competencies": ["Stock opening and closing", "Sales expertise", "Accurate Money Handling", "Store Merchandising"],
+            "Retail Systems": ["Loss prevention", "Product promotions", "Inventory Tracking", "POS Software"],
+        },
+        "education": [
+            {
+                "heading": "Diploma: Financial Accounting — Oxford Software Institute",
+                "date": "June 2016",
+                "sub": "New Delhi, India",
+                "bullets": [],
+            }
+        ],
+        "experience": [
+            {
+                "heading": "Retail Sales Associate — ABC Store",
+                "date": "07/2016 - Current",
+                "sub": "New Delhi, Delhi",
+                "bullets": [
+                    "Proactively upsold products by introducing accessories, adding ₹8,000 to average monthly sales.",
+                    "Trained 4 new retail team members on visual merchandising and customer service.",
+                ],
+            }
+        ],
+        "projects": [],
+        "certifications": ["Certified Retail Professional (RAI)"],
+        "achievements": ["Zero cash discrepancy award across 18 months"],
+    },
+    # EXECUTIVE HEADER
+    "executive_header": {
+        "name": "Saanvi Patel",
+        "email": "saanvipatel@sample.in",
+        "phone": "+91 97170 54977",
+        "location": "New Delhi, India 110014",
+        "linkedin": "linkedin.com/in/saanvi-patel-sales",
+        "github": "",
+        "summary": "Accomplished Retail Sales Lead with 5+ years of customer service, sales growth, and floor inventory management. Proven success driving unit volume and client retention.",
+        "skills": {
+            "Leadership & Sales": ["Sales Floor Management", "Customer Retention", "Merchandising", "Staff Onboarding"],
+            "Financial Control": ["POS Systems", "Cash Reconciliation", "Loss Prevention", "Margin Control"],
+        },
+        "education": [
+            {
+                "heading": "Diploma: Financial Accounting — Oxford Software Institute",
+                "date": "June 2016",
+                "sub": "New Delhi, India",
+                "bullets": [],
+            }
+        ],
+        "experience": [
+            {
+                "heading": "Retail Sales Associate — ABC Store",
+                "date": "07/2016 - Current",
+                "sub": "New Delhi, Delhi",
+                "bullets": [
+                    "Maintained top sales volume in regional cluster, boosting basket size by 18%.",
+                    "Audited physical inventory logs with zero shrinkage over 4 consecutive quarters.",
+                ],
+            }
+        ],
+        "projects": [],
+        "certifications": ["Executive Retail Leadership Certificate"],
+        "achievements": ["Best Customer Satisfaction Award (North Zone)"],
+    },
+    # MODERN TECH
     "modern_tech": {
         "name": "Aarav Patel",
         "email": "aarav.patel@devmail.io",
@@ -314,7 +504,6 @@ DUMMY_PROFILES = {
                 "sub": "Go, AWS Lambda, DynamoDB, React",
                 "bullets": [
                     "Open-source monitoring tool utilized by 3,500+ developers worldwide with multi-region health checks.",
-                    "Integrated Discord & Slack webhook alert dispatch with automated incident tracking.",
                 ],
             }
         ],
@@ -332,76 +521,9 @@ DUMMY_PROFILES = {
         ],
         "achievements": [
             "Won 1st Prize at HackIndia 2022 (Built automated API vulnerability scanner)",
-            "Top 2% contributor on GitHub in Go/Cloud ecosystem",
         ],
     },
-    "executive_suite": {
-        "name": "Vikram Malhotra",
-        "email": "v.malhotra.exec@outlook.com",
-        "phone": "+91 99112 23344",
-        "location": "New Delhi / Gurugram, India",
-        "linkedin": "linkedin.com/in/vikram-malhotra-vp",
-        "github": "",
-        "summary": "Transformational Engineering Leader with 14+ years of experience leading multi-disciplinary engineering organizations of 60+ members across India and North America. Scaled SaaS revenue from $4M to $25M ARR while driving enterprise modernization.",
-        "skills": {
-            "Executive Leadership": ["Engineering Strategy", "P&L Management", "Team Scaling (10 -> 65)", "Talent Retention", "Executive Stakeholder Alignment"],
-            "Architecture & Scale": ["Enterprise Architecture", "SaaS Multi-tenancy", "Cloud Cost Governance", "ISO 27001 & SOC2 Compliance"],
-            "Operational Rigor": ["Agile at Scale (SAFe)", "OKRs & KPIs", "Vendor Negotiation", "Mergers & Technical Due Diligence"],
-        },
-        "experience": [
-            {
-                "heading": "Vice President of Engineering — Crestline Enterprise Systems",
-                "date": "Jan 2020 - Present",
-                "sub": "Gurugram, India",
-                "bullets": [
-                    "Oversee 65-member global engineering & QA organization delivering core B2B banking SaaS products.",
-                    "Spearheaded multi-region cloud consolidation reducing AWS annual run-rate by $420,000 without performance loss.",
-                    "Achieved 94% annualized team retention by instituting transparent engineering career ladders and growth coaching.",
-                ],
-            },
-            {
-                "heading": "Director of Software Engineering — FinLogic Global",
-                "date": "Mar 2015 - Dec 2019",
-                "sub": "Noida, India",
-                "bullets": [
-                    "Led core platform engineering through acquisition transition, maintaining 99.99% contract SLAs.",
-                    "Championed automated CI/CD and DevSecOps transformation, boosting release cadence from monthly to daily.",
-                ],
-            },
-        ],
-        "projects": [
-            {
-                "heading": "Core Cloud Platform Modernization ($12M Scale)",
-                "date": "2021 - 2023",
-                "sub": "Multi-Cloud Kubernetes, Zero Trust Security",
-                "bullets": [
-                    "Delivered 18-month enterprise modernization on time and 8% under budget, supporting tier-1 banking clients.",
-                ],
-            }
-        ],
-        "education": [
-            {
-                "heading": "M.Tech in Software Systems — BITS Pilani",
-                "date": "2011 - 2013",
-                "sub": "Graduated with Honors",
-                "bullets": [],
-            },
-            {
-                "heading": "B.Tech in Computer Science — Delhi Technological University (DTU)",
-                "date": "2006 - 2010",
-                "sub": "First Division",
-                "bullets": [],
-            },
-        ],
-        "certifications": [
-            "Executive Leadership Program — IIM Ahmedabad (2021)",
-            "TOGAF 9.2 Enterprise Architecture Certified",
-        ],
-        "achievements": [
-            "Recognized as 'Top Technology Leader of the Year' at India FinTech Summit 2023",
-            "Keynote speaker at 4 national DevOps and Cloud Architecture summits",
-        ],
-    },
+    # CREATIVE DESIGNER
     "creative_designer": {
         "name": "Priya Sundaram",
         "email": "priya.design@createbox.co",
@@ -409,11 +531,11 @@ DUMMY_PROFILES = {
         "location": "Bengaluru, India",
         "linkedin": "linkedin.com/in/priya-design",
         "github": "dribbble.com/priyaux",
-        "summary": "Product & UX Designer with 5 years crafting human-centered mobile and web applications. Passionate about design systems, micro-interactions, and translating complex user flows into intuitive, high-converting interfaces.",
+        "summary": "Product & UX Designer with 5 years crafting human-centered mobile and web applications. Passionate about design systems, micro-interactions, and translating complex user flows into intuitive interfaces.",
         "skills": {
-            "Product Design": ["User Experience (UX)", "Interface Design (UI)", "Design Systems", "Wireframing & Prototyping", "Information Architecture"],
-            "Research & Validation": ["Usability Testing", "User Journey Mapping", "A/B Testing", "Heuristic Evaluation", "User Interviews"],
-            "Tools & Code": ["Figma (Auto-layout, Components)", "Adobe Creative Suite", "Framer", "Miro", "HTML5/CSS3 basics"],
+            "Product Design": ["User Experience (UX)", "Interface Design (UI)", "Design Systems", "Wireframing & Prototyping"],
+            "Research & Validation": ["Usability Testing", "User Journey Mapping", "A/B Testing", "Heuristic Evaluation"],
+            "Tools": ["Figma (Auto-layout, Components)", "Adobe Creative Suite", "Framer", "Miro"],
         },
         "experience": [
             {
@@ -423,28 +545,15 @@ DUMMY_PROFILES = {
                 "bullets": [
                     "Redesigned mobile checkout journey, resulting in a 24% uplift in cart conversion across 1.4M users.",
                     "Architected unified cross-platform design system 'Prism' utilized across iOS, Android, and web products.",
-                    "Facilitated design thinking workshops with PMs and engineering leads to align product sprint roadmaps.",
                 ],
-            },
-            {
-                "heading": "UX/UI Designer — PixelCraft Agency",
-                "date": "Aug 2019 - Jun 2022",
-                "sub": "Chennai, India",
-                "bullets": [
-                    "Delivered end-to-end design solutions for 8 SaaS and consumer tech clients from discovery to design handoff.",
-                    "Conducted 45+ usability interviews that directly informed product pivots for a seed-funded fintech startup.",
-                ],
-            },
+            }
         ],
         "projects": [
             {
                 "heading": "ZenHealth — Holistic Wellness & Telehealth App",
                 "date": "2023",
-                "sub": "Figma, Framer, User Testing (50+ participants)",
-                "bullets": [
-                    "Designed accessible healthcare onboarding flow scoring 86 SUS (System Usability Scale).",
-                    "Featured on Behance Curated Interaction Design Gallery.",
-                ],
+                "sub": "Figma, Framer, User Testing",
+                "bullets": ["Designed accessible healthcare onboarding flow scoring 86 SUS (System Usability Scale)."],
             }
         ],
         "education": [
@@ -455,80 +564,43 @@ DUMMY_PROFILES = {
                 "bullets": [],
             }
         ],
-        "certifications": [
-            "Interaction Design Foundation (IxDF) Certified UX Master",
-            "Nielsen Norman Group (NN/g) UX Certified",
-        ],
-        "achievements": [
-            "Featured Speaker at DesignUp Conference 2023 on 'Scalable Design Tokens in Figma'",
-            "Winner of UX India Student Design Award (2019)",
-        ],
+        "certifications": ["Nielsen Norman Group (NN/g) UX Certified"],
+        "achievements": ["Featured Speaker at DesignUp Conference 2023"],
     },
+    # IVY ACADEMIC
     "ivy_academic": {
         "name": "Dr. Ananya Sen",
         "email": "ananya.sen@univ-research.edu",
         "phone": "+91 94321 87654",
-        "location": "Kolkata / Delhi, India",
+        "location": "New Delhi, India",
         "linkedin": "linkedin.com/in/dr-ananya-sen",
         "github": "scholar.google.com/citations?user=ananya-sen",
-        "summary": "Postdoctoral Research Fellow and Computer Scientist specializing in Explainable AI, Deep Graph Networks, and Computer Vision. Author of 12 peer-reviewed IEEE/ACM papers with 420+ citations. Recipient of National Science Fellowship.",
+        "summary": "Postdoctoral Research Fellow and Computer Scientist specializing in Explainable AI and Deep Graph Networks. Author of 12 peer-reviewed IEEE/ACM papers with 420+ citations.",
         "skills": {
-            "Research Domains": ["Deep Learning", "Graph Neural Networks (GNN)", "Explainable AI (XAI)", "Medical Imaging Analysis"],
-            "Technical Stack": ["PyTorch", "TensorFlow", "CUDA / C++", "Python (NumPy, SciPy)", "LaTeX", "OpenCV"],
-            "Methodology": ["Statistical Hypothesis Testing", "Grant Proposal Writing", "Peer Reviewing", "Curriculum Development"],
+            "Research Domains": ["Deep Learning", "Graph Neural Networks (GNN)", "Explainable AI (XAI)", "Medical Imaging"],
+            "Technical Stack": ["PyTorch", "CUDA / C++", "Python (NumPy, SciPy)", "LaTeX", "OpenCV"],
         },
         "education": [
             {
                 "heading": "Ph.D. in Computer Science — Indian Institute of Technology (IIT) Kharagpur",
                 "date": "2018 - 2023",
-                "sub": "Thesis: Interpretable Graph Representations for Biomedical Image Segmentation",
-                "bullets": ["Awarded Best Doctoral Dissertation Award in Computational Sciences."],
-            },
-            {
-                "heading": "M.Tech in Computer Science — Jadavpur University",
-                "date": "2016 - 2018",
-                "sub": "First Class with Distinction (Gold Medalist)",
+                "sub": "Thesis: Interpretable Graph Representations for Biomedical Segmentation",
                 "bullets": [],
-            },
+            }
         ],
         "experience": [
             {
                 "heading": "Postdoctoral Research Fellow — Institute of AI & Medical Sciences",
                 "date": "May 2023 - Present",
                 "sub": "New Delhi, India",
-                "bullets": [
-                    "Principal investigator on DST-funded grant ($60,000) developing low-latency diagnostic screening models.",
-                    "Supervise 4 doctoral candidates and organize weekly departmental seminar series in machine learning.",
-                ],
-            },
-            {
-                "heading": "Graduate Teaching & Research Assistant — IIT Kharagpur",
-                "date": "Jul 2018 - Apr 2023",
-                "sub": "Kharagpur, West Bengal",
-                "bullets": [
-                    "Taught 'Advanced Deep Learning' and 'Data Structures' to batches of 140+ undergraduate engineering students.",
-                    "Reviewed 25+ manuscripts for IEEE Transactions on Neural Networks and Learning Systems (TNNLS).",
-                ],
-            },
-        ],
-        "projects": [
-            {
-                "heading": "Explainable Histopathology Classification Network",
-                "date": "2022 - 2023",
-                "sub": "PyTorch, CUDA, Published in IEEE TMI",
-                "bullets": [
-                    "Developed novel attention-guided graph framework that achieved 96.4% sensitivity on multiclass tumor datasets.",
-                ],
+                "bullets": ["Principal investigator on DST-funded grant developing low-latency diagnostic screening models."],
             }
         ],
-        "certifications": [
-            "National Eligibility Test (CSIR-UGC NET) — JRF (All India Rank 14)",
-        ],
-        "achievements": [
-            "Selected for prestigious Young Scientist Travel Grant to CVPR",
-            "Published 12 papers indexed in Scopus / Web of Science with h-index 9",
-        ],
+        "projects": [],
+        "certifications": ["CSIR-UGC NET Junior Research Fellowship (AIR 14)"],
+        "achievements": ["Published 12 papers indexed in Scopus / Web of Science with h-index 9"],
     },
+    # EMERALD FINANCE
     "emerald_finance": {
         "name": "Rohan Kapoor",
         "email": "rohan.kapoor@finadvisory.in",
@@ -538,83 +610,47 @@ DUMMY_PROFILES = {
         "github": "",
         "summary": "Chartered Financial Analyst (CFA) and Strategy Consultant with 6 years advising Fortune 500 leadership on M&A due diligence, financial modeling, capital allocation, and debt restructuring valued over $400M.",
         "skills": {
-            "Financial Modeling": ["DCF & LBO Modeling", "Mergers & Acquisitions (M&A)", "Three-Statement Modeling", "Company Valuation"],
-            "Corporate Strategy": ["Due Diligence", "Market Entry Sizing", "Synergy Assessment", "Commercial Due Diligence"],
-            "Tools & Systems": ["Bloomberg Terminal", "Capital IQ", "PitchBook", "Excel (VBA / Macros)", "Power BI"],
+            "Financial Modeling": ["DCF & LBO Modeling", "Mergers & Acquisitions (M&A)", "Three-Statement Modeling"],
+            "Tools & Systems": ["Bloomberg Terminal", "Capital IQ", "PitchBook", "Excel (VBA / Macros)"],
         },
         "experience": [
             {
                 "heading": "Manager, Corporate Finance & Advisory — Apex Capital Partners",
                 "date": "Aug 2021 - Present",
                 "sub": "Mumbai, Maharashtra",
-                "bullets": [
-                    "Advised on 7 completed sell-side and buy-side M&A transactions with aggregate transaction value of $320M.",
-                    "Engineered complex dynamic leveraged buyout (LBO) financial models evaluating debt service capacity across stress scenarios.",
-                    "Authored Confidential Information Memorandums (CIM) presented directly to sovereign wealth and PE funds.",
-                ],
-            },
-            {
-                "heading": "Senior Associate, Strategy Consulting — Global Strategy Group",
-                "date": "Jul 2018 - Jul 2021",
-                "sub": "Gurugram, India",
-                "bullets": [
-                    "Conducted commercial due diligence and market sizing for renewable energy and SaaS portfolio investments.",
-                    "Identified cost-saving levers delivering $18M recurring EBITDA improvement for an industrial manufacturing client.",
-                ],
-            },
-        ],
-        "projects": [
-            {
-                "heading": "Cross-Border FinTech Valuation & Synergies Analysis",
-                "date": "2023",
-                "sub": "Capital IQ, Dynamic Discounted Cash Flow Modeling",
-                "bullets": [
-                    "Modeled combined post-merger balance sheet and calculated $42M present value of technology platform synergies.",
-                ],
+                "bullets": ["Advised on 7 completed sell-side and buy-side M&A transactions totaling $320M in aggregate value."],
             }
         ],
+        "projects": [],
         "education": [
             {
                 "heading": "MBA in Finance & Strategy — SPJIMR, Mumbai",
                 "date": "2016 - 2018",
-                "sub": "Dean's Honor List (Top 5% of graduating cohort)",
+                "sub": "Dean's Honor List (Top 5% of cohort)",
                 "bullets": [],
-            },
-            {
-                "heading": "B.Com (Honours) — Shri Ram College of Commerce (SRCC), Delhi",
-                "date": "2013 - 2016",
-                "sub": "First Division with Distinction",
-                "bullets": [],
-            },
+            }
         ],
-        "certifications": [
-            "CFA Charterholder — CFA Institute, USA (Chartered in 2021)",
-            "Financial Risk Manager (FRM Level 1 Passed)",
-        ],
-        "achievements": [
-            "National Finalist in CFA Institute Research Challenge (2018)",
-            "Fast-tracked to Advisory Manager within 24 months based on deal velocity",
-        ],
+        "certifications": ["CFA Charterholder — CFA Institute, USA"],
+        "achievements": ["National Finalist in CFA Institute Research Challenge (2018)"],
     },
+    # COMPACT FRESHER
     "compact_fresher": {
         "name": "Neha Verma",
         "email": "neha.verma.cs24@gmail.com",
         "phone": "+91 98987 65432",
-        "location": "Jaipur / Bengaluru, India",
+        "location": "Jaipur, India",
         "linkedin": "linkedin.com/in/neha-verma-tech",
         "github": "github.com/neha-verma24",
-        "summary": "Recent Computer Science & Engineering graduate (2024) with strong foundations in Data Structures, Algorithms, Python, and React.js. Completed 2 software internships and built 4 production-grade web applications.",
+        "summary": "Recent Computer Science graduate (2024) with solid foundations in Data Structures, Algorithms, Python, and React.js. Completed 2 software internships.",
         "skills": {
             "Programming": ["Python", "Java", "C++", "JavaScript", "SQL"],
-            "Web Technologies": ["React.js", "HTML5", "CSS3", "Node.js (Express)", "REST APIs"],
-            "Database & Tools": ["MySQL", "MongoDB", "Git & GitHub", "VS Code", "Postman", "Linux"],
-            "Core CS": ["Data Structures & Algorithms", "Object-Oriented Programming (OOP)", "Database Management (DBMS)"],
+            "Web Stack": ["React.js", "Node.js (Express)", "HTML5/CSS3", "REST APIs"],
         },
         "education": [
             {
-                "heading": "B.Tech in Computer Science & Engineering — Malaviya National Institute of Technology (MNIT)",
+                "heading": "B.Tech in Computer Science & Engineering — MNIT Jaipur",
                 "date": "2020 - 2024",
-                "sub": "CGPA: 8.7 / 10 | Relevant Coursework: Operating Systems, Computer Networks, Cloud Basics",
+                "sub": "CGPA: 8.7 / 10 | Relevant Coursework: OS, DBMS, Computer Networks",
                 "bullets": [],
             }
         ],
@@ -623,41 +659,21 @@ DUMMY_PROFILES = {
                 "heading": "Software Development Intern — QuickByte Technologies",
                 "date": "Jan 2024 - Jun 2024",
                 "sub": "Bengaluru (Hybrid)",
-                "bullets": [
-                    "Developed 5 responsive customer portal pages in React.js, reducing average page load time by 30%.",
-                    "Integrated JWT token-based authentication and role-based access control (RBAC) across 8 REST endpoints.",
-                    "Wrote automated unit test suites using Jest, raising backend code coverage from 62% to 84%.",
-                ],
+                "bullets": ["Developed 5 responsive customer portal pages in React.js, lowering page load time by 30%."],
             }
         ],
         "projects": [
             {
                 "heading": "Smart Campus Lost & Found System",
-                "date": "Aug 2023 - Nov 2023",
-                "sub": "React.js, Node.js, Express, MongoDB",
-                "bullets": [
-                    "Created college-wide portal serving 3,000+ active students with automated image matching and email notifications.",
-                    "Implemented responsive mobile-friendly UI with zero external UI library overhead.",
-                ],
-            },
-            {
-                "heading": "Algorithmic Pathfinding Visualizer",
-                "date": "May 2023",
-                "sub": "JavaScript, HTML5 Canvas",
-                "bullets": [
-                    "Interactive visualization tool demonstrating Dijkstra's, A*, and BFS pathfinding algorithms with custom grid walls.",
-                ],
-            },
+                "date": "2023",
+                "sub": "React.js, Node.js, MongoDB",
+                "bullets": ["College portal serving 3,000+ active students with automated notifications."],
+            }
         ],
-        "certifications": [
-            "Meta Front-End Developer Professional Certificate (Coursera, 2023)",
-            "Problem Solving (Advanced) Certificate — HackerRank",
-        ],
-        "achievements": [
-            "Solved 450+ coding problems across LeetCode and GeeksforGeeks",
-            "Finalist in Smart India Hackathon (SIH 2023) — College Team Lead",
-        ],
+        "certifications": ["Meta Front-End Developer Certificate"],
+        "achievements": ["Solved 450+ coding problems across LeetCode and GeeksforGeeks"],
     },
+    # DATA SCIENCE & AI
     "data_science_ai": {
         "name": "Arjun Nair",
         "email": "arjun.nair@datasci.ai",
@@ -665,204 +681,102 @@ DUMMY_PROFILES = {
         "location": "Bengaluru, India",
         "linkedin": "linkedin.com/in/arjun-nair-ai",
         "github": "github.com/arjun-nair-ml",
-        "summary": "Lead Machine Learning Engineer & Data Scientist with 6+ years deploying scalable LLM pipelines, RAG systems, and computer vision models. Master's in CS from IISc with experience serving 50M+ automated inferences per month.",
+        "summary": "Lead Machine Learning Engineer with 6+ years deploying scalable LLM pipelines, RAG systems, and computer vision models. Master's in CS from IISc.",
         "skills": {
-            "AI / ML Modeling": ["Large Language Models (LLMs)", "RAG Systems", "PyTorch", "Hugging Face", "LangChain", "LlamaIndex"],
-            "MLOps & Deployment": ["Triton Inference Server", "MLflow", "Docker", "Kubeflow", "AWS SageMaker", "ONNX"],
-            "Data & Analytics": ["Python (NumPy, SciPy, Pandas)", "SQL", "Spark / PySpark", "Vector Databases (Milvus, Pinecone, FAISS)"],
-            "Specialized": ["Fine-tuning (LoRA, QLoRA)", "Prompt Engineering", "Semantic Search", "Time Series Forecasting"],
+            "AI / ML Modeling": ["Large Language Models (LLMs)", "RAG Systems", "PyTorch", "Hugging Face", "LangChain"],
+            "MLOps": ["Triton Inference Server", "MLflow", "Docker", "AWS SageMaker"],
         },
         "experience": [
             {
                 "heading": "Lead Machine Learning Engineer — CognitiveScale AI",
                 "date": "Aug 2021 - Present",
                 "sub": "Bengaluru, India",
-                "bullets": [
-                    "Designed enterprise generative AI assistant with multi-document RAG, answering 120,000 queries/month with 94% factual accuracy.",
-                    "Fine-tuned open-source 7B and 13B parameter LLMs using QLoRA, cutting API operational expenses by $18,000/month.",
-                    "Built automated MLOps evaluation harness testing embeddings drift, hallucination metrics, and response latencies.",
-                ],
-            },
-            {
-                "heading": "Data Scientist — QuantIQ Analytics",
-                "date": "Jul 2018 - Jul 2021",
-                "sub": "Hyderabad, India",
-                "bullets": [
-                    "Engineered deep learning fraud detection classifier on 40M financial records, mitigating $2.4M in unauthorized card charges.",
-                    "Deployed distributed XGBoost risk models on AWS SageMaker with automated weekly data drift retraining.",
-                ],
-            },
-        ],
-        "projects": [
-            {
-                "heading": "NeuroSearch — Open-Source Hybrid Vector Search Engine",
-                "date": "2023",
-                "sub": "Python, FAISS, BM25, FastAPI",
-                "bullets": [
-                    "Blended dense vector semantic embeddings with sparse BM25 keyword search, improving retrieval recall by 19%.",
-                ],
+                "bullets": ["Designed enterprise generative AI assistant with RAG, answering 120,000 queries/month with 94% accuracy."],
             }
         ],
+        "projects": [],
         "education": [
             {
-                "heading": "M.Tech in Computational Science — Indian Institute of Science (IISc), Bangalore",
+                "heading": "M.Tech in Computational Science — IISc Bangalore",
                 "date": "2016 - 2018",
-                "sub": "GPA: 9.1 / 10 | Focus: High Performance Machine Learning",
+                "sub": "GPA: 9.1 / 10",
                 "bullets": [],
-            },
-            {
-                "heading": "B.Tech in Computer Engineering — NIT Calicut",
-                "date": "2012 - 2016",
-                "sub": "Graduated First Class with Honors",
-                "bullets": [],
-            },
+            }
         ],
-        "certifications": [
-            "TensorFlow Certified Professional Developer (Google)",
-            "DeepLearning.AI Deep Learning Specialization",
-        ],
-        "achievements": [
-            "Kaggle Competitions Master (Top 1% global ranking, 2 Gold Medals)",
-            "Co-authored research paper on 'Quantized Embeddings in Domain RAG' (EMNLP Workshop)",
-        ],
+        "certifications": ["TensorFlow Certified Developer (Google)"],
+        "achievements": ["Kaggle Competitions Master (Top 1% global ranking)"],
     },
+    # STARTUP GROWTH
     "startup_growth": {
         "name": "Karan Mehra",
         "email": "karan@productscale.co",
         "phone": "+91 98123 45678",
-        "location": "Bengaluru / Gurugram, India",
+        "location": "Bengaluru, India",
         "linkedin": "linkedin.com/in/karan-product",
         "github": "",
-        "summary": "Product Management & Growth Leader with 6 years taking B2B SaaS and consumer products from 0 to 1 and 1 to 10. Managed $8M ARR portfolios, driven 42% retention improvements, and spearheaded agile development across 3 pods.",
+        "summary": "Product Management & Growth Leader with 6 years taking B2B SaaS and consumer products from 0 to 1. Managed $8M ARR portfolios and driven 42% retention uplift.",
         "skills": {
-            "Product Leadership": ["0-to-1 Product Discovery", "User Journey Optimization", "PLG (Product-Led Growth)", "Pricing & Packaging"],
-            "Execution & Analytics": ["A/B Testing & Experimentation", "Amplitude", "Mixpanel", "SQL", "Google Analytics 4", "Hotjar"],
-            "Processes & Tools": ["Scrum & Kanban", "PRDs & User Stories", "Jira", "Notion", "Linear", "Figma wireframing"],
+            "Product Leadership": ["0-to-1 Product Discovery", "PLG (Product-Led Growth)", "Pricing & Packaging"],
+            "Analytics & Tools": ["Amplitude", "Mixpanel", "SQL", "Jira", "Linear"],
         },
         "experience": [
             {
                 "heading": "Principal Product Manager — ZapFlow Technologies",
                 "date": "Apr 2022 - Present",
                 "sub": "Bengaluru, India",
-                "bullets": [
-                    "Led product strategy for automated workflow builder, accelerating product-qualified leads (PQLs) by 58% in 6 months.",
-                    "Instituted continuous experimentation framework launching 24 growth A/B experiments that unlocked $1.8M ARR.",
-                    "Collaborated closely with enterprise sales leadership to close 14 six-figure ACV client deals.",
-                ],
-            },
-            {
-                "heading": "Senior Product Manager — GrowthHub SaaS",
-                "date": "Jan 2019 - Mar 2022",
-                "sub": "Gurugram, India",
-                "bullets": [
-                    "Revamped self-serve onboarding experience, boosting day-30 trial-to-paid conversion from 4.2% to 8.6%.",
-                    "Managed cross-functional agile squad of 11 engineers, 2 designers, and 1 product marketer.",
-                ],
-            },
-        ],
-        "projects": [
-            {
-                "heading": "Zero-to-One AI Marketing Assistant Launch",
-                "date": "2023",
-                "sub": "Generative AI, Agile Product Discovery",
-                "bullets": [
-                    "Conducted 60 customer discovery interviews, validated product-market fit, and hit $400K ARR in 90 days post-launch.",
-                ],
+                "bullets": ["Led automated workflow builder strategy, accelerating PQLs by 58% in 6 months."],
             }
         ],
+        "projects": [],
         "education": [
             {
-                "heading": "Post Graduate Diploma in Management (MBA) — IIM Lucknow",
+                "heading": "MBA — IIM Lucknow",
                 "date": "2016 - 2018",
                 "sub": "Major in Marketing & Strategy",
                 "bullets": [],
-            },
-            {
-                "heading": "B.Tech in Mechanical Engineering — IIT Roorkee",
-                "date": "2012 - 2016",
-                "sub": "Graduated First Class",
-                "bullets": [],
-            },
+            }
         ],
-        "certifications": [
-            "Reforge Certified Growth Series & Product Strategy",
-            "Certified Scrum Product Owner (CSPO)",
-        ],
-        "achievements": [
-            "Ranked among 'Top 25 Rising Product Leaders in India' by ProductGeeks",
-            "Speaker on 'Product-Led Growth Metrics that Matter' at SaaSBoomi 2023",
-        ],
+        "certifications": ["Reforge Growth Series Certified"],
+        "achievements": ["Top 25 Rising Product Leaders in India"],
     },
+    # EURO INTERNATIONAL
     "euro_international": {
         "name": "Siddharth Roy",
         "email": "s.roy@globalcloud.eu",
-        "phone": "+44 7700 900123 / +91 99000 11223",
+        "phone": "+44 7700 900123",
         "location": "London, UK / Bengaluru, India",
         "linkedin": "linkedin.com/in/siddharth-roy-architect",
         "github": "github.com/siddharth-cloud-intl",
-        "summary": "Enterprise Solutions Architect with 11+ years leading multi-national cloud infrastructure projects across Europe and Asia. Specialized in TOGAF architecture frameworks, multi-region compliance (GDPR), and scalable migration.",
+        "summary": "Enterprise Solutions Architect with 11+ years leading multi-national cloud infrastructure projects across Europe and Asia. Specialized in TOGAF and GDPR compliance.",
         "skills": {
-            "Enterprise Architecture": ["TOGAF 9.2", "Cloud Migration", "Multi-Region Disaster Recovery", "Zero Trust Architecture"],
-            "Cloud & Infrastructure": ["AWS (Well-Architected Framework)", "Microsoft Azure", "Terraform", "Kubernetes", "Cisco Networking"],
-            "Compliance & Governance": ["GDPR / Data Sovereignty", "ISO/IEC 27001", "SOC 2 Type II", "FinOps Cloud Cost Allocation"],
-            "Languages": ["English (Native / Fluent)", "German (B2 Professional)", "Hindi (Native)"],
+            "Enterprise Architecture": ["TOGAF 9.2", "Cloud Migration", "Multi-Region DR", "Zero Trust"],
+            "Cloud Stack": ["AWS", "Azure", "Terraform", "Kubernetes"],
         },
         "experience": [
             {
-                "heading": "Lead Enterprise Cloud Architect — Continental Cloud Solutions",
+                "heading": "Lead Enterprise Cloud Architect — Continental Cloud",
                 "date": "Jan 2021 - Present",
-                "sub": "London, United Kingdom & Frankfurt, Germany",
-                "bullets": [
-                    "Direct cloud transformation roadmap for 4 tier-1 European financial and retail conglomerates with $20M+ cloud spend.",
-                    "Engineered GDPR-compliant sovereign data storage architecture across AWS Frankfurt and Zurich regions.",
-                    "Decreased critical incident MTTR by 52% via infrastructure-as-code automation and distributed Datadog observability.",
-                ],
-            },
-            {
-                "heading": "Senior Infrastructure Architect — Tata Consultancy Services (TCS)",
-                "date": "Sep 2014 - Dec 2020",
-                "sub": "Bengaluru, India & Amsterdam, Netherlands",
-                "bullets": [
-                    "Managed migration of 220+ legacy on-premise application servers into Azure cloud environment with zero planned outage.",
-                    "Authored technical RFPs that secured £8.5M multi-year managed cloud infrastructure partnership.",
-                ],
-            },
-        ],
-        "projects": [
-            {
-                "heading": "Global Zero-Trust Multi-Cloud Mesh",
-                "date": "2022 - 2023",
-                "sub": "Terraform, AWS, Azure, HashiCorp Vault",
-                "bullets": [
-                    "Established encrypted software-defined mesh linking 14 international offices with unified identity access.",
-                ],
+                "sub": "London, UK & Frankfurt, Germany",
+                "bullets": ["Direct cloud transformation roadmap for 4 tier-1 European financial conglomerates."],
             }
         ],
+        "projects": [],
         "education": [
             {
-                "heading": "M.Sc in Information Systems & Cloud Security — King's College London",
+                "heading": "M.Sc in Information Systems — King's College London",
                 "date": "2013 - 2014",
                 "sub": "Graduated with Distinction",
                 "bullets": [],
-            },
-            {
-                "heading": "B.E. in Electronics & Telecommunications — Mumbai University",
-                "date": "2008 - 2012",
-                "sub": "First Class with Distinction",
-                "bullets": [],
-            },
+            }
         ],
-        "certifications": [
-            "AWS Certified Solutions Architect – Professional (SAP-C02)",
-            "TOGAF 9 Certified Enterprise Architect (The Open Group)",
-            "Certified Information Systems Security Professional (CISSP)",
-        ],
-        "achievements": [
-            "Co-authored whitepaper on 'Data Sovereignty in European Hybrid Clouds'",
-            "Elected Member of British Computer Society (MBCS)",
-        ],
+        "certifications": ["AWS Certified Solutions Architect – Professional", "TOGAF 9 Certified"],
+        "achievements": ["Co-authored whitepaper on European Hybrid Clouds"],
     },
 }
+
+# Alias classic_ats to classic_serif
+RESUME_TEMPLATES["classic_ats"] = RESUME_TEMPLATES["classic_serif"]
+DUMMY_PROFILES["classic_ats"] = DUMMY_PROFILES["classic_serif"]
 
 
 # ---------------------------------------------------------------------------
@@ -923,46 +837,300 @@ def profile_to_form_text(profile: dict) -> dict[str, str]:
 
 
 def get_template(template_id: str) -> dict:
-    """Return template dict or fallback to classic_ats."""
-    return RESUME_TEMPLATES.get(template_id, RESUME_TEMPLATES["classic_ats"])
+    """Return template dict or fallback to sidebar_modern."""
+    return RESUME_TEMPLATES.get(template_id, RESUME_TEMPLATES["sidebar_modern"])
 
 
 def get_dummy_profile(template_id: str) -> dict:
     """Return realistic dummy candidate profile for the specified template."""
-    return DUMMY_PROFILES.get(template_id, DUMMY_PROFILES["classic_ats"])
+    return DUMMY_PROFILES.get(template_id, DUMMY_PROFILES["sidebar_modern"])
 
 
 # ---------------------------------------------------------------------------
-# INTERACTIVE LIVE HTML PREVIEW BUILDER (FOR STREAMLIT UI)
+# MINIATURE THUMBNAIL CARD GENERATOR (EXACTLY MATCHING SCREENSHOT)
 # ---------------------------------------------------------------------------
-def render_template_html(profile: dict, template_id: str = "classic_ats") -> str:
-    """Render a live, beautiful HTML/CSS preview card of the resume inside Streamlit."""
+def render_template_thumbnail(template_id: str, accent_hex: str = "", is_selected: bool = False) -> str:
+    """Generate miniature visual resume thumbnail HTML matching the user screenshot layout."""
     tpl = get_template(template_id)
-    accent = tpl["accent_hex"]
-    font_fam = tpl.get("font_family_css", "'Inter', sans-serif")
-    align = tpl.get("header_layout", "center")
-    bullet_char = tpl.get("bullet_char", "•")
+    color = accent_hex if accent_hex and accent_hex != "#0284C7_rainbow" else tpl["accent_hex"]
+    name = "Saanvi Patel"
 
-    # Header Contacts
+    selected_border = "border: 2.5px solid #0284c7; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28);" if is_selected else "border: 1px solid #d1d5db; box-shadow: 0 2px 6px rgba(0,0,0,0.06);"
+    selected_badge = '<div style="position:absolute; top:8px; right:8px; background:#0284c7; color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:12px; z-index:10; box-shadow:0 1px 4px rgba(0,0,0,0.2);">✓ Selected</div>' if is_selected else ''
+
+    # 1. SIDEBAR MODERN THUMBNAIL (TOP-LEFT OF SCREENSHOT)
+    if template_id == "sidebar_modern":
+        inner_html = f"""
+        <div style="display:flex; height:100%; width:100%;">
+          <!-- Left Column (Accent Sidebar) -->
+          <div style="width:36%; background:{color}; color:#ffffff; padding:10px 8px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center;">
+            <div style="width:34px; height:34px; background:rgba(255,255,255,0.22); border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:6px; border:1px solid rgba(255,255,255,0.35);">
+              <span style="font-size:16px;">👤</span>
+            </div>
+            <div style="font-size:11px; font-weight:800; text-align:center; line-height:1.15; color:#ffffff;">{name}</div>
+            <div style="font-size:7.5px; opacity:0.85; text-align:center; margin-bottom:8px;">Profession</div>
+
+            <div style="width:100%; font-size:7.5px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.35); padding-bottom:1px; margin-bottom:3px; text-transform:uppercase;">Contact</div>
+            <div style="width:100%; font-size:6.5px; opacity:0.9; margin-bottom:6px; line-height:1.2;">
+              <div>• New Delhi, India</div>
+              <div>• +91 97170 54977</div>
+              <div>• sample@mail.in</div>
+            </div>
+
+            <div style="width:100%; font-size:7.5px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.35); padding-bottom:1px; margin-bottom:3px; text-transform:uppercase;">Skills</div>
+            <div style="width:100%; font-size:6.5px; opacity:0.9; line-height:1.25;">
+              <div>• Stock management</div>
+              <div>• Sales expertise</div>
+              <div>• Accurate Money Handling</div>
+              <div>• Merchandising</div>
+            </div>
+          </div>
+          <!-- Right Column (White Body) -->
+          <div style="width:64%; background:#ffffff; padding:12px 10px; box-sizing:border-box;">
+            <div style="font-size:9px; font-weight:800; color:{color}; border-bottom:1px solid {color}30; padding-bottom:2px; margin-bottom:3px;">Education</div>
+            <div style="font-size:7.5px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting</div>
+            <div style="font-size:6.5px; color:#64748b; margin-bottom:6px;">Oxford Software Institute, New Delhi (June 2016)</div>
+
+            <div style="font-size:9px; font-weight:800; color:{color}; border-bottom:1px solid {color}30; padding-bottom:2px; margin-bottom:3px;">Work History</div>
+            <div style="font-size:7.5px; font-weight:700; color:#1e293b;">Retail Sales Associate</div>
+            <div style="font-size:6.5px; color:#64748b; margin-bottom:2px;">ABC Store, New Delhi | 2016 - Current</div>
+            <div style="font-size:6.5px; color:#475569; line-height:1.25; margin-bottom:5px;">
+              <div>• Upsold accessories adding ₹8,000 monthly.</div>
+              <div>• Maintained 95%+ positive customer ratings.</div>
+            </div>
+
+            <div style="font-size:7.5px; font-weight:700; color:#1e293b;">Cashier</div>
+            <div style="font-size:6.5px; color:#64748b; margin-bottom:2px;">Starbucks | 2015 - 2016</div>
+            <div style="font-size:6.5px; color:#475569; line-height:1.25;">
+              <div>• Handled peak transactions with zero error.</div>
+            </div>
+          </div>
+        </div>
+        """
+
+    # 2. CLASSIC SERIF THUMBNAIL (TOP-RIGHT OF SCREENSHOT)
+    elif template_id in ("classic_serif", "classic_ats"):
+        inner_html = f"""
+        <div style="height:100%; width:100%; background:#ffffff; padding:12px 14px; box-sizing:border-box; font-family:'Times New Roman', Georgia, serif; text-align:center;">
+          <div style="font-size:12px; font-weight:800; letter-spacing:0.04em; color:#0f172a; text-transform:uppercase;">{name}</div>
+          <div style="font-size:7px; color:#64748b; font-style:italic; margin-top:1px;">PROFESSION</div>
+          <div style="font-size:6.5px; color:#64748b; margin-top:2px;">New Delhi, India 110014 | +91 97170 54977 | saanvipatel@sample.in</div>
+          <hr style="border:none; border-top:1px solid #0f172a; margin:4px 0 6px 0;" />
+
+          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">EDUCATION</div>
+          <div style="font-size:7px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting, June 2016</div>
+          <div style="font-size:6.5px; color:#64748b; margin-bottom:5px;">Oxford Software Institute & Oxford School of English, New Delhi</div>
+
+          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">PROFESSIONAL SUMMARY</div>
+          <div style="font-size:6.5px; color:#475569; text-align:justify; line-height:1.2; margin-bottom:5px;">
+            Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service.
+          </div>
+
+          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">SKILLS</div>
+          <div style="display:flex; justify-content:space-between; font-size:6.5px; color:#334155; text-align:left; margin-bottom:5px; padding:0 8px;">
+            <div>• Stock opening and closing<br>• Accurate Money Handling</div>
+            <div>• Sales expertise<br>• Store Merchandising</div>
+          </div>
+
+          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">WORK HISTORY</div>
+          <div style="font-size:7px; font-weight:700; color:#1e293b; text-align:left;">Retail Sales Associate (07/2016 - Current)</div>
+          <div style="font-size:6.5px; color:#475569; text-align:left; line-height:1.2;">
+            <div>• Effectively upsold products, adding ₹8,000 to monthly sales.</div>
+            <div>• Maintained top positive customer reviews.</div>
+          </div>
+        </div>
+        """
+
+    # 3. TOP BANNER THUMBNAIL (BOTTOM-LEFT OF SCREENSHOT)
+    elif template_id == "top_banner":
+        inner_html = f"""
+        <div style="height:100%; width:100%; background:#ffffff; box-sizing:border-box; display:flex; flex-direction:column;">
+          <!-- Top Accent Banner -->
+          <div style="background:{color}; color:#ffffff; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:12px; font-weight:800; color:#ffffff;">{name}</div>
+              <div style="font-size:7.5px; color:rgba(255,255,255,0.9); margin-top:1px;">Profession</div>
+            </div>
+            <div style="width:28px; height:28px; background:rgba(255,255,255,0.25); border-radius:4px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.4);">
+              <span style="font-size:14px;">👤</span>
+            </div>
+          </div>
+          <!-- Body Content -->
+          <div style="padding:10px 12px; flex:1;">
+            <div style="display:flex; justify-content:space-between; font-size:6.5px; color:#64748b; margin-bottom:6px; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">
+              <span>📍 New Delhi, India</span>
+              <span>📞 +91 97170 54977</span>
+              <span>✉️ sample@mail.in</span>
+            </div>
+
+            <div style="display:inline-block; background:{color}18; color:{color}; font-size:7.5px; font-weight:800; padding:1px 6px; border-radius:3px; margin-bottom:3px;">EDUCATION</div>
+            <div style="font-size:7px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting</div>
+            <div style="font-size:6.5px; color:#64748b; margin-bottom:6px;">Oxford Software Institute (June 2016)</div>
+
+            <div style="display:inline-block; background:{color}18; color:{color}; font-size:7.5px; font-weight:800; padding:1px 6px; border-radius:3px; margin-bottom:3px;">WORK HISTORY</div>
+            <div style="font-size:7px; font-weight:700; color:#1e293b;">Retail Sales Associate</div>
+            <div style="font-size:6.5px; color:#475569; line-height:1.25;">
+              <div>• Boosted monthly sales volume by ₹8,000 via add-ons.</div>
+              <div>• Managed high-traffic cash counter with zero errors.</div>
+            </div>
+          </div>
+        </div>
+        """
+
+    # 4. EXECUTIVE HEADER THUMBNAIL (BOTTOM-RIGHT OF SCREENSHOT)
+    elif template_id in ("executive_header", "executive_suite"):
+        inner_html = f"""
+        <div style="height:100%; width:100%; background:#ffffff; box-sizing:border-box; display:flex; flex-direction:column;">
+          <!-- Dark Executive Header -->
+          <div style="background:#1e293b; color:#ffffff; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:12px; font-weight:800; color:#ffffff;">{name}</div>
+              <div style="font-size:7px; color:rgba(255,255,255,0.75);">Profession</div>
+              <div style="font-size:6px; color:rgba(255,255,255,0.65); margin-top:2px;">New Delhi | +91 97170 54977 | sample@mail.in</div>
+            </div>
+            <div style="width:28px; height:28px; background:#334155; border-radius:4px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.25);">
+              <span style="font-size:14px;">👤</span>
+            </div>
+          </div>
+          <!-- Body Content -->
+          <div style="padding:10px 12px; flex:1;">
+            <div style="font-size:8px; font-weight:800; color:{color}; border-bottom:1.5px solid {color}; padding-bottom:1px; margin-bottom:4px; text-transform:uppercase;">◆ Education</div>
+            <div style="font-size:7px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting</div>
+            <div style="font-size:6.5px; color:#64748b; margin-bottom:6px;">Oxford Software Institute, New Delhi (June 2016)</div>
+
+            <div style="font-size:8px; font-weight:800; color:{color}; border-bottom:1.5px solid {color}; padding-bottom:1px; margin-bottom:4px; text-transform:uppercase;">◆ Work History</div>
+            <div style="font-size:7px; font-weight:700; color:#1e293b;">Retail Sales Associate (07/2016 - Current)</div>
+            <div style="font-size:6.5px; color:#475569; line-height:1.25;">
+              <div>• Controlled merchandising and boosted add-on revenue by ₹8,000/mo.</div>
+              <div>• Promoted high customer satisfaction and store loyalty.</div>
+            </div>
+          </div>
+        </div>
+        """
+
+    # 5. GENERIC MODERN FORMAT FOR ALL OTHER TEMPLATES
+    else:
+        inner_html = f"""
+        <div style="height:100%; width:100%; background:#ffffff; padding:12px; box-sizing:border-box;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid {color}; padding-bottom:4px; margin-bottom:6px;">
+            <span style="font-size:11px; font-weight:800; color:{color};">{tpl['name']}</span>
+            <span style="font-size:6px; color:#64748b;">[{tpl['badge']}]</span>
+          </div>
+          <div style="font-size:7px; font-weight:700; color:#1e293b; margin-bottom:2px;">{name} — {tpl['category']}</div>
+          <div style="font-size:6px; color:#64748b; margin-bottom:6px;">New Delhi, India | +91 97170 54977 | candidate@sample.com</div>
+
+          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">Summary</div>
+          <div style="font-size:6.5px; color:#475569; line-height:1.2; margin-bottom:6px;">{tpl['description'][:95]}...</div>
+
+          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">Core Experience</div>
+          <div style="font-size:6.5px; color:#334155; line-height:1.25;">
+            <div>• Led cross-functional initiatives delivering high performance.</div>
+            <div>• Engineered scalable frameworks with verified industry metrics.</div>
+          </div>
+        </div>
+        """
+
+    return f"""
+    <div style="position:relative; width:100%; height:255px; border-radius:8px; overflow:hidden; {selected_border} transition:all 0.2s ease-in-out; margin-bottom:6px;">
+      {selected_badge}
+      {inner_html}
+    </div>
+    """
+
+
+# ---------------------------------------------------------------------------
+# FULL-SIZE INTERACTIVE LIVE HTML PREVIEW BUILDER
+# ---------------------------------------------------------------------------
+def render_template_html(profile: dict, template_id: str = "sidebar_modern", custom_accent_hex: str = "") -> str:
+    """Render a full-size formatted resume preview card matching the selected format."""
+    tpl = get_template(template_id)
+    accent = custom_accent_hex if custom_accent_hex and custom_accent_hex != "#0284C7_rainbow" else tpl["accent_hex"]
+    font_fam = tpl.get("font_family_css", "'Inter', sans-serif")
+    name = profile.get("name", "Candidate Name")
+
     contacts = [profile.get("email"), profile.get("phone"), profile.get("location")]
     contacts += [profile.get(k) for k in ("linkedin", "github") if profile.get(k)]
     contacts = [c for c in contacts if c]
-    contact_str = " &nbsp;·&nbsp; ".join(contacts)
 
-    header_align_css = "text-align: center;" if align == "center" else "text-align: left;"
+    # A. TWO-COLUMN SIDEBAR LAYOUT
+    if template_id == "sidebar_modern":
+        skills_html = ""
+        for cat, items in profile.get("skills", {}).items():
+            skills_html += f"""<div style="font-size:0.8rem; font-weight:700; margin-top:8px; opacity:0.95;">{cat}</div>"""
+            skills_html += "".join(f"""<div style="font-size:0.78rem; opacity:0.9; margin-left:6px;">• {it}</div>""" for it in items)
+
+        contact_html = "".join(f"""<div style="margin-bottom:4px; font-size:0.8rem; opacity:0.95;">• {c}</div>""" for c in contacts)
+
+        exp_html = ""
+        for e in profile.get("experience", []):
+            exp_html += f"""
+            <div style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                <span style="font-weight:700; color:#0f172a; font-size:0.95rem;">{e.get('heading', '')}</span>
+                <span style="font-size:0.82rem; font-style:italic; color:#64748b;">{e.get('date', '')}</span>
+              </div>
+              {f'<div style="font-size:0.84rem; font-style:italic; color:#475569; margin-bottom:4px;">{e["sub"]}</div>' if e.get('sub') else ''}
+              <ul style="margin:4px 0 0 16px; padding:0; color:#334155; font-size:0.88rem;">
+            """
+            for b in e.get("bullets", []):
+                exp_html += f"""<li style="margin-bottom:3px;">{b}</li>"""
+            exp_html += "</ul></div>"
+
+        edu_html = ""
+        for ed in profile.get("education", []):
+            edu_html += f"""
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                <span style="font-weight:700; color:#0f172a; font-size:0.92rem;">{ed.get('heading', '')}</span>
+                <span style="font-size:0.82rem; font-style:italic; color:#64748b;">{ed.get('date', '')}</span>
+              </div>
+              {f'<div style="font-size:0.84rem; color:#475569;">{ed["sub"]}</div>' if ed.get('sub') else ''}
+            </div>
+            """
+
+        return f"""
+        <div style="font-family:{font_fam}; background:#ffffff; color:#1e293b; border-radius:10px; border:1px solid #e2e8f0; box-shadow:0 4px 20px rgba(0,0,0,0.08); max-width:840px; margin:0 auto; overflow:hidden; display:flex;">
+          <!-- Left Sidebar -->
+          <div style="width:34%; background:{accent}; color:#ffffff; padding:28px 20px; box-sizing:border-box;">
+            <div style="width:58px; height:58px; background:rgba(255,255,255,0.22); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto; border:2px solid rgba(255,255,255,0.4); font-size:26px;">
+              👤
+            </div>
+            <div style="font-size:1.35rem; font-weight:800; text-align:center; line-height:1.15; color:#ffffff;">{name}</div>
+            <div style="font-size:0.85rem; opacity:0.88; text-align:center; margin-top:3px; margin-bottom:18px;">Professional Profile</div>
+
+            <div style="font-size:0.82rem; font-weight:800; border-bottom:1px solid rgba(255,255,255,0.35); padding-bottom:3px; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Contact Info</div>
+            <div style="margin-bottom:18px;">{contact_html}</div>
+
+            <div style="font-size:0.82rem; font-weight:800; border-bottom:1px solid rgba(255,255,255,0.35); padding-bottom:3px; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Skills</div>
+            <div>{skills_html}</div>
+          </div>
+          <!-- Right Body -->
+          <div style="width:66%; background:#ffffff; padding:28px 24px; box-sizing:border-box;">
+            {f'<div style="font-size:0.88rem; font-weight:800; text-transform:uppercase; color:{accent}; border-bottom:2px solid {accent}; padding-bottom:3px; margin-bottom:8px;">Professional Summary</div><p style="margin:0 0 16px 0; font-size:0.9rem; color:#334155; line-height:1.45;">{profile["summary"]}</p>' if profile.get("summary") else ''}
+
+            <div style="font-size:0.88rem; font-weight:800; text-transform:uppercase; color:{accent}; border-bottom:2px solid {accent}; padding-bottom:3px; margin-bottom:10px;">Work History</div>
+            {exp_html}
+
+            <div style="font-size:0.88rem; font-weight:800; text-transform:uppercase; color:{accent}; border-bottom:2px solid {accent}; padding-bottom:3px; margin-bottom:10px; margin-top:16px;">Education</div>
+            {edu_html}
+          </div>
+        </div>
+        """
+
+    # B. CLASSIC CENTERED / TOP BANNER / OTHER FORMATS
+    contact_str = " &nbsp;·&nbsp; ".join(contacts)
     border_decor = f"border-bottom: 2px solid {accent}; padding-bottom: 4px; margin-bottom: 10px;"
 
     html_parts = [
         f"""
-        <div style="font-family: {font_fam}; background: #ffffff; color: #1e293b; padding: 28px 32px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.06); max-width: 820px; margin: 0 auto; line-height: 1.5; font-size: 0.92rem;">
-          <div style="{header_align_css} margin-bottom: 18px;">
-            <div style="font-size: 1.75rem; font-weight: 800; color: {accent}; letter-spacing: -0.02em;">{profile.get('name', 'Candidate Name')}</div>
+        <div style="font-family: {font_fam}; background: #ffffff; color: #1e293b; padding: 32px 36px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 820px; margin: 0 auto; line-height: 1.5; font-size: 0.92rem;">
+          <div style="text-align: center; margin-bottom: 18px;">
+            <div style="font-size: 1.85rem; font-weight: 800; color: {accent}; letter-spacing: -0.01em;">{name}</div>
             <div style="font-size: 0.86rem; color: #64748b; margin-top: 4px;">{contact_str}</div>
           </div>
         """
     ]
 
-    # Summary
     if profile.get("summary"):
         html_parts.append(
             f"""
@@ -973,12 +1141,11 @@ def render_template_html(profile: dict, template_id: str = "classic_ats") -> str
             """
         )
 
-    # Skills
     if profile.get("skills"):
         html_parts.append(
             f"""
             <div style="margin-bottom: 16px;">
-              <div style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: {accent}; {border_decor}">Technical Skills</div>
+              <div style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: {accent}; {border_decor}">Skills</div>
             """
         )
         for cat, items in profile["skills"].items():
@@ -987,12 +1154,11 @@ def render_template_html(profile: dict, template_id: str = "classic_ats") -> str
             )
         html_parts.append("</div>")
 
-    # Experience
     if profile.get("experience"):
         html_parts.append(
             f"""
             <div style="margin-bottom: 16px;">
-              <div style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: {accent}; {border_decor}">Professional Experience</div>
+              <div style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: {accent}; {border_decor}">Work History / Experience</div>
             """
         )
         for e in profile["experience"]:
@@ -1012,32 +1178,6 @@ def render_template_html(profile: dict, template_id: str = "classic_ats") -> str
             html_parts.append("</ul></div>")
         html_parts.append("</div>")
 
-    # Projects
-    if profile.get("projects"):
-        html_parts.append(
-            f"""
-            <div style="margin-bottom: 16px;">
-              <div style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: {accent}; {border_decor}">Key Projects</div>
-            """
-        )
-        for p in profile["projects"]:
-            html_parts.append(
-                f"""
-                <div style="margin-bottom: 10px;">
-                  <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                    <span style="font-weight: 700; color: #0f172a; font-size: 0.94rem;">{p.get('heading', '')}</span>
-                    <span style="font-size: 0.82rem; font-style: italic; color: #64748b;">{p.get('date', '')}</span>
-                  </div>
-                  {f'<div style="font-size: 0.84rem; font-style: italic; color: #475569; margin-bottom: 3px;">{p["sub"]}</div>' if p.get('sub') else ''}
-                  <ul style="margin: 4px 0 0 16px; padding: 0; color: #334155;">
-                """
-            )
-            for b in p.get("bullets", []):
-                html_parts.append(f"""<li style="margin-bottom: 2px;">{b}</li>""")
-            html_parts.append("</ul></div>")
-        html_parts.append("</div>")
-
-    # Education
     if profile.get("education"):
         html_parts.append(
             f"""
@@ -1053,36 +1193,10 @@ def render_template_html(profile: dict, template_id: str = "classic_ats") -> str
                     <span style="font-weight: 700; color: #0f172a;">{ed.get('heading', '')}</span>
                     <span style="font-size: 0.82rem; font-style: italic; color: #64748b;">{ed.get('date', '')}</span>
                   </div>
-                  {f'<div style="font-size: 0.84rem; font-style: italic; color: #475569;">{ed["sub"]}</div>' if ed.get('sub') else ''}
+                  {f'<div style="font-size: 0.84rem; color: #475569;">{ed["sub"]}</div>' if ed.get('sub') else ''}
                 </div>
                 """
             )
-        html_parts.append("</div>")
-
-    # Certifications & Achievements
-    if profile.get("certifications") or profile.get("achievements"):
-        html_parts.append(f"""<div style="margin-bottom: 10px;">""")
-        if profile.get("certifications"):
-            html_parts.append(
-                f"""
-                <div style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: {accent}; {border_decor}">Certifications</div>
-                <ul style="margin: 4px 0 12px 16px; padding: 0; color: #334155;">
-                """
-            )
-            for c in profile["certifications"]:
-                html_parts.append(f"""<li style="margin-bottom: 2px;">{c}</li>""")
-            html_parts.append("</ul>")
-
-        if profile.get("achievements"):
-            html_parts.append(
-                f"""
-                <div style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: {accent}; {border_decor}">Key Achievements & Honors</div>
-                <ul style="margin: 4px 0 12px 16px; padding: 0; color: #334155;">
-                """
-            )
-            for a in profile["achievements"]:
-                html_parts.append(f"""<li style="margin-bottom: 2px;">{a}</li>""")
-            html_parts.append("</ul>")
         html_parts.append("</div>")
 
     html_parts.append("</div>")
