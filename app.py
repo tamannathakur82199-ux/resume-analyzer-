@@ -262,6 +262,128 @@ except ImportError:
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_JD = os.path.join(HERE, "sample_data", "job_description.txt")
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def get_template_preview(template_id: str, accent_hex: str = "#0284C7") -> str | bytes:
+    """Returns an image path or in-memory PNG bytes for Streamlit st.image (no HTML code)."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        accent_rgb = hex_to_rgb(accent_hex)
+        W, H = 480, 660
+
+        def get_f(name='arial.ttf', size=12):
+            for candidate in [name, 'Arial.ttf', 'calibri.ttf', 'DejaVuSans.ttf', 'times.ttf']:
+                try:
+                    return ImageFont.truetype(candidate, size)
+                except Exception:
+                    continue
+            return ImageFont.load_default()
+
+        def draw_avatar(draw, x, y, w, h, is_circle=False):
+            if is_circle:
+                draw.ellipse([x, y, x + w, y + h], fill=(226, 232, 240), outline=(255, 255, 255), width=2)
+            else:
+                draw.rounded_rectangle([x, y, x + w, y + h], radius=4, fill=(226, 232, 240), outline=(255, 255, 255), width=1)
+            draw.ellipse([x + w*0.25, y + h*0.14, x + w*0.75, y + h*0.75], fill=(71, 85, 105))
+            draw.rectangle([x + w*0.42, y + h*0.5, x + w*0.58, y + h*0.68], fill=(203, 213, 225))
+            draw.ellipse([x + w*0.32, y + h*0.26, x + w*0.68, y + h*0.58], fill=(248, 250, 252))
+            draw.chord([x + w*0.28, y + h*0.18, x + w*0.72, y + h*0.44], start=180, end=360, fill=(51, 65, 85))
+            draw.pieslice([x + w*0.1, y + h*0.62, x + w*0.9, y + h*1.15], start=180, end=360, fill=(100, 116, 139))
+
+        f_body = get_f('arial.ttf', 9)
+        f_bold = get_f('arialbd.ttf', 10)
+        f_head = get_f('arialbd.ttf', 12)
+        f_gray = get_f('arial.ttf', 9)
+
+        if template_id == 'sidebar_modern':
+            img = Image.new('RGB', (W, H), (255, 255, 255))
+            d = ImageDraw.Draw(img)
+            side_w = 160
+            d.rectangle([0, 0, side_w, H], fill=accent_rgb)
+            draw_avatar(d, 45, 25, 70, 70, is_circle=True)
+            d.text((80, 105), 'Saanvi Patel', fill=(255, 255, 255), font=get_f('arialbd.ttf', 16), anchor='mm')
+            d.text((80, 125), 'Profession', fill=(220, 230, 245), font=get_f('arial.ttf', 10), anchor='mm')
+            d.line([15, 142, side_w - 15, 142], fill=(255, 255, 255, 100), width=1)
+            d.text((15, 150), 'CONTACT', fill=(255, 255, 255), font=get_f('arialbd.ttf', 11))
+            d.text((15, 170), 'New Delhi, India 110014\n+91 97170 54977\nsaanvipatel@sample.in', fill=(235, 245, 255), font=f_gray, spacing=5)
+            d.line([15, 235, side_w - 15, 235], fill=(255, 255, 255, 100), width=1)
+            d.text((15, 245), 'SKILLS', fill=(255, 255, 255), font=get_f('arialbd.ttf', 11))
+            skills = ['• Stock opening & closing', '• Sales expertise', '• Accurate Money Handling', '• Store Merchandising', '• Loss prevention']
+            d.text((15, 268), '\n'.join(skills), fill=(235, 245, 255), font=f_gray, spacing=6)
+            rx = 180
+            d.text((rx, 25), 'Education', fill=accent_rgb, font=get_f('arialbd.ttf', 13))
+            d.text((rx, 50), 'June 2016   Diploma: Financial Accounting', fill=(15, 23, 42), font=f_bold)
+            d.text((rx, 68), 'Oxford Business Institute, New Delhi', fill=(100, 116, 139), font=f_gray)
+            d.rectangle([rx, 90, rx + 285, 165], fill=(248, 250, 252))
+            d.line([rx, 90, rx, 165], fill=accent_rgb, width=3)
+            sum_text = 'Motivated Sales Associate with 5 years of experience boosting sales\nand customer loyalty through individualized service. Resourceful expert\nat training customer needs and meeting sales quotas.'
+            d.text((rx + 10, 98), sum_text, fill=(71, 85, 105), font=f_body, spacing=5)
+            d.text((rx, 185), 'Work History', fill=accent_rgb, font=get_f('arialbd.ttf', 13))
+            d.text((rx, 210), '2016-07 - Current   Retail Sales Associate', fill=(15, 23, 42), font=f_bold)
+            d.text((rx, 228), 'ABC Store, New Delhi', fill=(100, 116, 139), font=f_gray)
+            w1 = ['• Effectively upsold products by introducing accessories, adding', '  ₹8,000 to average monthly sales volume.', '• Maintained 95%+ positive customer feedback and store loyalty.']
+            d.text((rx + 5, 248), '\n'.join(w1), fill=(51, 65, 85), font=f_body, spacing=5)
+            d.text((rx, 335), '2015-01 - 2016-06   Barista', fill=(15, 23, 42), font=f_bold)
+            d.text((rx, 353), 'Starbucks - New Delhi', fill=(100, 116, 139), font=f_gray)
+            w2 = ['• Created over 60 drinks per hour with top satisfaction scores.', '• Handled peak transactions with zero error.']
+            d.text((rx + 5, 372), '\n'.join(w2), fill=(51, 65, 85), font=f_body, spacing=5)
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            return buf.getvalue()
+        elif template_id in ('classic_serif', 'classic_ats'):
+            static_p = os.path.join(HERE, 'assets', 'templates', 'classic_serif.png')
+            if os.path.isfile(static_p):
+                return static_p
+        elif template_id == 'top_banner':
+            img = Image.new('RGB', (W, H), (255, 255, 255))
+            d = ImageDraw.Draw(img)
+            b_h = 135
+            d.rectangle([0, 0, W, b_h], fill=accent_rgb)
+            draw_avatar(d, 375, 18, 80, 98, is_circle=False)
+            d.text((25, 20), 'Saanvi Patel', fill=(255, 255, 255), font=get_f('arialbd.ttf', 22))
+            d.text((25, 48), 'Profession', fill=(240, 255, 230), font=get_f('arial.ttf', 12))
+            d.text((25, 72), '📍 New Delhi, India 110014\n📞 +91 97170 54977\n✉️ saanvipatel@sample.in', fill=(255, 255, 255), font=f_gray, spacing=4)
+            d.text((25, 155), '●  Education', fill=accent_rgb, font=f_head)
+            d.text((25, 178), 'Diploma: Financial Accounting', fill=(15, 23, 42), font=f_bold)
+            d.text((25, 195), 'Oxford Business Institute, New Delhi (June 2016)', fill=(100, 116, 139), font=f_gray)
+            d.text((25, 230), '●  Professional Summary', fill=accent_rgb, font=f_head)
+            d.text((25, 252), 'Motivated Sales Associate with 5 years of experience boosting sales\nand customer loyalty through individualized service.', fill=(51, 65, 85), font=f_body, spacing=4)
+            d.text((25, 315), '●  Work History', fill=accent_rgb, font=f_head)
+            d.text((25, 340), 'Retail Sales Associate (07/2016 - Current)', fill=(15, 23, 42), font=f_bold)
+            d.text((25, 357), 'ABC Store, New Delhi', fill=(100, 116, 139), font=f_gray)
+            d.text((30, 375), '• Boosted monthly sales volume by ₹8,000 via accessories.\n• Maintained 95%+ positive customer loyalty.', fill=(51, 65, 85), font=f_body, spacing=5)
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            return buf.getvalue()
+        elif template_id in ('executive_header', 'executive_suite'):
+            img = Image.new('RGB', (W, H), (255, 255, 255))
+            d = ImageDraw.Draw(img)
+            b_h = 135
+            d.rectangle([0, 0, W, b_h], fill=(38, 43, 48))
+            draw_avatar(d, 375, 18, 80, 98, is_circle=False)
+            d.line([0, b_h, W, b_h], fill=accent_rgb, width=3)
+            d.text((25, 20), 'Saanvi Patel', fill=(255, 255, 255), font=get_f('arialbd.ttf', 22))
+            d.text((25, 48), 'Profession', fill=(203, 213, 225), font=get_f('arial.ttf', 12))
+            d.text((25, 72), 'Address: New Delhi, India 110014\nPhone: +91 97170 54977\nEmail: saanvipatel@sample.in', fill=(226, 232, 240), font=f_gray, spacing=4)
+            d.text((25, 155), '◆  Education', fill=(15, 23, 42), font=f_head)
+            d.text((25, 178), 'Diploma: Financial Accounting, June 2016', fill=(15, 23, 42), font=f_bold)
+            d.text((25, 195), 'Oxford Business Institute, New Delhi', fill=(100, 116, 139), font=f_gray)
+            d.text((25, 230), '◆  Professional Summary', fill=(15, 23, 42), font=f_head)
+            d.text((25, 252), 'Motivated Sales Associate with 5 years of experience boosting sales\nand customer loyalty through individualized service.', fill=(51, 65, 85), font=f_body, spacing=4)
+            d.text((25, 315), '◆  Work History', fill=(15, 23, 42), font=f_head)
+            d.text((25, 340), 'Retail Sales Associate (07/2016 - Current)', fill=(15, 23, 42), font=f_bold)
+            d.text((25, 357), 'ABC Store, New Delhi', fill=(100, 116, 139), font=f_gray)
+            d.text((30, 375), '• Controlled merchandising and boosted store revenue by ₹8,000/mo.\n• Promoted high customer satisfaction and store loyalty.', fill=(51, 65, 85), font=f_body, spacing=5)
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            return buf.getvalue()
+    except Exception:
+        pass
+
+    static_path = os.path.join(HERE, 'assets', 'templates', f'{template_id}.png')
+    if os.path.isfile(static_path):
+        return static_path
+    return os.path.join(HERE, 'assets', 'templates', 'sidebar_modern.png')
 # Look for the logo in the assets folder first, then beside app.py.
 LOGO_CANDIDATES = [
     os.path.join(HERE, "assets", "logo.png"),
@@ -1345,6 +1467,16 @@ elif active_tab == "Build Resume":
                 ("executive_header", "Executive Dark Banner", "Executive Suite"),
             ]
 
+            # Active template selection highlight on preview image
+            st.markdown(f"""
+            <style>
+              div[data-testid="column"]:has(button[key="sel_tpl_{current_tpl_id}"]) img {{
+                  border: 2.5px solid #0284c7 !important;
+                  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+              }}
+            </style>
+            """, unsafe_allow_html=True)
+
             # Render 2x2 grid
             for row_idx in range(0, len(featured_tpl_list), 2):
                 col_left, col_right = st.columns(2, gap="medium")
@@ -1353,8 +1485,7 @@ elif active_tab == "Build Resume":
                 tpl_id_1, tpl_name_1, tpl_badge_1 = featured_tpl_list[row_idx]
                 is_sel_1 = (current_tpl_id == tpl_id_1)
                 with col_left:
-                    thumb_html_1 = render_template_thumbnail(tpl_id_1, accent_hex=current_color_hex, is_selected=is_sel_1)
-                    st.markdown(thumb_html_1, unsafe_allow_html=True)
+                    st.image(get_template_preview(tpl_id_1, current_color_hex), use_container_width=True)
                     tc1, tc2 = st.columns([2.5, 1.5])
                     with tc1:
                         st.markdown(f"**{tpl_name_1}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_1}</span>", unsafe_allow_html=True)
@@ -1369,8 +1500,7 @@ elif active_tab == "Build Resume":
                     tpl_id_2, tpl_name_2, tpl_badge_2 = featured_tpl_list[row_idx + 1]
                     is_sel_2 = (current_tpl_id == tpl_id_2)
                     with col_right:
-                        thumb_html_2 = render_template_thumbnail(tpl_id_2, accent_hex=current_color_hex, is_selected=is_sel_2)
-                        st.markdown(thumb_html_2, unsafe_allow_html=True)
+                        st.image(get_template_preview(tpl_id_2, current_color_hex), use_container_width=True)
                         tc1, tc2 = st.columns([2.5, 1.5])
                         with tc1:
                             st.markdown(f"**{tpl_name_2}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_2}</span>", unsafe_allow_html=True)
@@ -1399,8 +1529,7 @@ elif active_tab == "Build Resume":
                     tpl_id_1, tpl_name_1, tpl_badge_1 = more_tpl_list[row_idx]
                     is_sel_1 = (current_tpl_id == tpl_id_1)
                     with col_left:
-                        thumb_html_1 = render_template_thumbnail(tpl_id_1, accent_hex=current_color_hex, is_selected=is_sel_1)
-                        st.markdown(thumb_html_1, unsafe_allow_html=True)
+                        st.image(get_template_preview(tpl_id_1, current_color_hex), use_container_width=True)
                         tc1, tc2 = st.columns([2.5, 1.5])
                         with tc1:
                             st.markdown(f"**{tpl_name_1}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_1}</span>", unsafe_allow_html=True)
@@ -1413,8 +1542,7 @@ elif active_tab == "Build Resume":
                         tpl_id_2, tpl_name_2, tpl_badge_2 = more_tpl_list[row_idx + 1]
                         is_sel_2 = (current_tpl_id == tpl_id_2)
                         with col_right:
-                            thumb_html_2 = render_template_thumbnail(tpl_id_2, accent_hex=current_color_hex, is_selected=is_sel_2)
-                            st.markdown(thumb_html_2, unsafe_allow_html=True)
+                            st.image(get_template_preview(tpl_id_2, current_color_hex), use_container_width=True)
                             tc1, tc2 = st.columns([2.5, 1.5])
                             with tc1:
                                 st.markdown(f"**{tpl_name_2}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_2}</span>", unsafe_allow_html=True)
