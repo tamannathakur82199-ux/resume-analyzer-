@@ -1,0 +1,21 @@
+Job Title: Python Developer (AI / ML)  -  Fresher / Junior
+
+About the role
+We are looking for a Python Developer with an interest in Artificial Intelligence and
+Machine Learning to join our product team. You will build and ship data-driven features,
+such as resume screening, recommendation and text classification services.
+
+Requirements
+- 0-2 years of experience (freshers with strong projects are welcome)
+- Strong programming skills in Python and a good grasp of Data Structures and OOP
+- Hands-on experience with Pandas, NumPy and Scikit-learn
+- Knowledge of Machine Learning and Natural Language Processing (TF-IDF, text classification)
+- Good working knowledge of SQL and MySQL or PostgreSQL
+- Experience building REST API services using Flask or FastAPI
+- Version control with Git and GitHub
+- Familiarity with Docker is a plus
+
+Responsibilities
+- Develop, test and deploy ML-powered Python services
+- Clean and analyse data, evaluate model performance and improve accuracy
+- Collaborate with the team in an Agile environment

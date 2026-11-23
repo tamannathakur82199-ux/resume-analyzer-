@@ -1,0 +1,31 @@
+JUNIOR MACHINE LEARNING ENGINEER
+==================================================
+Company    : Zenith AI Labs (fictional)
+Location   : Pune (On-site)
+Experience : 0-2 years
+Job Type   : Full-time
+
+ABOUT THE ROLE
+Help our team build and deploy ML models for text classification and
+document understanding.
+
+RESPONSIBILITIES
+- Preprocess and label text datasets
+- Train, evaluate, and tune ML/NLP models
+- Deploy models as APIs
+- Monitor model performance and retrain as needed
+- Document experiments and results
+
+REQUIRED SKILLS
+- Python, scikit-learn, pandas
+- Basic understanding of NLP (tokenization, TF-IDF, embeddings)
+- Familiarity with TensorFlow or PyTorch
+- Basic Git and Linux command line
+
+GOOD TO HAVE
+- Transformers / Hugging Face
+- FastAPI, MLflow
+- Cloud experience
+
+QUALIFICATION
+B.Tech / MCA / M.Sc. in CS, AI, or Data Science

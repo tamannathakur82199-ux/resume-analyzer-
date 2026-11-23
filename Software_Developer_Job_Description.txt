@@ -1,0 +1,56 @@
+JOB DESCRIPTION: SOFTWARE DEVELOPER
+===================================
+
+JOB OVERVIEW
+------------
+A Software Developer designs, writes, tests and maintains software applications, websites or systems. The developer turns business or user needs into working, reliable and secure software, and works with a team of developers, testers, designers and project managers.
+
+KEY RESPONSIBILITIES
+--------------------
+1. Understand requirements from clients, product managers or team leads.
+2. Design software features and plan the technical approach.
+3. Write clean, efficient and well-documented code.
+4. Build and connect databases, APIs and user interfaces.
+5. Test code, find and fix bugs, and improve performance.
+6. Review teammates' code and take part in code reviews.
+7. Use version control (Git) and follow team workflows.
+8. Deploy applications and support them after release, including fixing production issues.
+9. Write technical documentation and user guides.
+10. Work in Agile/Scrum teams: daily stand-ups, sprint planning, demos.
+11. Keep learning new tools, frameworks and best practices.
+12. Follow security practices to protect user data.
+
+ELIGIBILITY / QUALIFICATIONS
+----------------------------
+- BCA / B.Tech / MCA / M.Tech / B.Sc (CS/IT) or equivalent. Self-taught developers with a strong portfolio are also hired by many companies.
+- Freshers need good projects, internships or GitHub work; experienced roles need prior work history.
+
+TECHNICAL SKILLS (ANY RELEVANT SET)
+-----------------------------------
+- Programming languages: Java, Python, JavaScript, C#, C++, PHP, etc.
+- Web: HTML, CSS, JavaScript, React / Angular, Node.js, Django / Spring Boot
+- Databases: MySQL, PostgreSQL, MongoDB
+- Tools: Git/GitHub, Postman, VS Code / IntelliJ, Docker (basic)
+- Concepts: Data structures and algorithms, OOP, REST APIs, SDLC, debugging
+
+SOFT SKILLS
+-----------
+- Logical and problem-solving ability
+- Clear communication and teamwork
+- Time management
+- Willingness to learn quickly
+
+WORKING CONDITIONS
+------------------
+- Office, hybrid or remote work depending on the company.
+- Regular full-time hours; occasional extra hours near release deadlines.
+
+CAREER GROWTH
+-------------
+Trainee / Junior Developer -> Software Developer -> Senior Developer -> Tech Lead -> Software Architect / Engineering Manager. Developers can also specialise in areas like AI/ML, cloud, cybersecurity, mobile apps or DevOps.
+
+HOW TO PREPARE (FOR APPLICANTS)
+-------------------------------
+- Build 2 to 3 solid projects and put them on GitHub.
+- Practise coding problems and revise core subjects (DBMS, OS, Networks, OOP).
+- Prepare a clear resume and practise technical and HR interview questions.

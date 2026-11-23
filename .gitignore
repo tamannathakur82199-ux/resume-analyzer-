@@ -1,0 +1,18 @@
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary app download copies
+app (*).py
+
+# Temporary generated output
+output/
+*.pdf
+*.docx
+!Project report.docx

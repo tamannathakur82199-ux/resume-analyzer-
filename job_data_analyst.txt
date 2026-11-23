@@ -1,0 +1,32 @@
+DATA ANALYST
+==================================================
+Company    : BrightLeaf Analytics (fictional)
+Location   : Remote (India)
+Experience : 0-2 years
+Job Type   : Full-time
+
+ABOUT THE ROLE
+Join our insights team to turn raw business data into clear
+dashboards and recommendations.
+
+RESPONSIBILITIES
+- Clean, transform, and analyze large datasets
+- Build dashboards in Power BI or Tableau
+- Write SQL queries for ad-hoc reporting
+- Present findings to non-technical stakeholders
+- Track KPIs and flag anomalies
+
+REQUIRED SKILLS
+- SQL and Excel (pivot tables, VLOOKUP/XLOOKUP)
+- Python (pandas, NumPy, matplotlib)
+- Power BI or Tableau
+- Good communication and problem-solving skills
+
+GOOD TO HAVE
+- Basic statistics
+- A/B testing knowledge
+- Experience with Google Analytics
+
+QUALIFICATION
+Bachelor's or Master's in Computer Applications, Statistics, or a
+related field

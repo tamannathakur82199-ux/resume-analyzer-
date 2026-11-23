@@ -1,0 +1,49 @@
+JOB DESCRIPTION: DATA ANALYST
+=============================
+
+JOB OVERVIEW
+------------
+A Data Analyst collects, cleans and studies data to find patterns and insights that help a business make better decisions. The analyst presents results through reports, dashboards and charts that managers can easily understand.
+
+KEY RESPONSIBILITIES
+--------------------
+1. Collect data from databases, spreadsheets, websites and business systems.
+2. Clean and prepare data by removing errors, duplicates and missing values.
+3. Analyse data using Excel, SQL, Python or R to find trends and patterns.
+4. Build dashboards and reports using Power BI, Tableau or Excel.
+5. Present findings to managers and teams in simple language.
+6. Work with business teams to understand their questions and goals.
+7. Track key business metrics (sales, customers, costs, website traffic, etc.).
+8. Create forecasts and basic statistical models when needed.
+9. Check data quality and keep documentation of data sources and methods.
+10. Suggest practical actions based on the data.
+
+ELIGIBILITY / QUALIFICATIONS
+----------------------------
+- Bachelor's or Master's degree in Computer Science, IT, Statistics, Maths, Economics, Commerce, Engineering, BCA/MCA or related field.
+- Certifications or courses in data analytics are helpful.
+
+SKILLS REQUIRED
+---------------
+- Advanced Excel (formulas, pivot tables)
+- SQL for querying databases
+- Python (Pandas, NumPy, Matplotlib) or R
+- Power BI / Tableau
+- Statistics and basic maths
+- Critical thinking and problem solving
+- Clear communication and storytelling with data
+
+WORKING CONDITIONS
+------------------
+- Office, hybrid or remote; works with business, IT and management teams.
+- Deadlines around monthly or quarterly reporting.
+
+CAREER GROWTH
+-------------
+Junior Data Analyst -> Data Analyst -> Senior Data Analyst -> Analytics Manager. Many analysts also move into Data Science, Machine Learning, Business Analysis or Data Engineering.
+
+HOW TO PREPARE (FOR APPLICANTS)
+-------------------------------
+- Learn SQL, Excel and Python, then practise on real datasets.
+- Build 2 to 3 portfolio projects with dashboards and case studies.
+- Be ready to explain your analysis steps in interviews.
