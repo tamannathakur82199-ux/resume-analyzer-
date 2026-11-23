@@ -21,7 +21,23 @@ from fpdf import FPDF
 
 from resume_parser import BULLET_RE, DATE_RANGE_RE, find_skills
 from skills_db import SECTION_TITLES, SKILL_CATEGORY
-from resume_templates import get_template, hex_to_rgb
+try:
+    from resume_templates import get_template, hex_to_rgb
+except ImportError:
+    def hex_to_rgb(hex_str: str) -> tuple[int, int, int]:
+        hex_str = hex_str.lstrip("#")
+        if len(hex_str) == 6:
+            return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+        return (31, 56, 100)
+
+    def get_template(tid):
+        _FALLBACK_TPLS = {
+            "sidebar_modern": {"name": "Modern Two-Column Sidebar", "accent_hex": "#0284C7", "accent_rgb": (2, 132, 199), "font_family_docx": "Arial", "font_family_pdf": "Helvetica", "header_layout": "sidebar", "rule_style": "thick", "bullet_style": "disc"},
+            "classic_serif": {"name": "Classic Centered Serif", "accent_hex": "#1F3864", "accent_rgb": (31, 56, 100), "font_family_docx": "Georgia", "font_family_pdf": "Times", "header_layout": "center", "rule_style": "solid", "bullet_style": "disc"},
+            "top_banner": {"name": "Modern Top Accent Banner", "accent_hex": "#15803D", "accent_rgb": (21, 128, 61), "font_family_docx": "Calibri", "font_family_pdf": "Helvetica", "header_layout": "top_banner", "rule_style": "pill", "bullet_style": "disc"},
+            "executive_header": {"name": "Executive Dark Banner", "accent_hex": "#1E293B", "accent_rgb": (30, 41, 59), "font_family_docx": "Georgia", "font_family_pdf": "Helvetica", "header_layout": "dark_header", "rule_style": "double", "bullet_style": "square"},
+        }
+        return _FALLBACK_TPLS.get(tid, _FALLBACK_TPLS["sidebar_modern"])
 
 NAVY = (31, 56, 100)
 PH_RED = (192, 57, 43)
@@ -524,14 +540,50 @@ def build_resume_pdf(profile: dict, path: str | None = None, template_id: str = 
                 fh.write(data)
         return data
 
-    # 2. STANDARD / BANNER / SERIF TEMPLATES
+    # 2. TOP BANNER / EXECUTIVE HEADER / STANDARD / SERIF TEMPLATES
+    has_banner = template_id in ("top_banner", "executive_header")
+    if template_id == "top_banner":
+        pdf.set_fill_color(*accent_rgb)
+        pdf.rect(0, 0, pdf.w, 36, style="F")
+        pdf.set_xy(16, 7)
+        pdf.set_font(font_fam, "B", 18); pdf.set_text_color(255, 255, 255)
+        pdf.cell(0, 7, _latin(profile.get("name", "Candidate")), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font(font_fam, "I", 9); pdf.set_text_color(240, 248, 255)
+        pdf.cell(0, 5, "Professional Resume", new_x="LMARGIN", new_y="NEXT")
+        contacts = [profile.get("email"), profile.get("phone"), profile.get("location")]
+        contacts += [profile.get(k) for k in ("linkedin", "github") if profile.get(k)]
+        contact_line = "   |   ".join([_latin(c) for c in contacts if c])
+        pdf.set_font(font_fam, "", 8.5); pdf.set_text_color(255, 255, 255)
+        pdf.cell(0, 5, contact_line, new_x="LMARGIN", new_y="NEXT")
+        pdf.set_xy(16, 40)
+    elif template_id == "executive_header":
+        pdf.set_fill_color(30, 41, 59)
+        pdf.rect(0, 0, pdf.w, 36, style="F")
+        pdf.set_xy(16, 7)
+        pdf.set_font(font_fam, "B", 18); pdf.set_text_color(255, 255, 255)
+        pdf.cell(0, 7, _latin(profile.get("name", "Candidate")), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font(font_fam, "I", 9); pdf.set_text_color(203, 213, 225)
+        pdf.cell(0, 5, "Executive Profile", new_x="LMARGIN", new_y="NEXT")
+        contacts = [profile.get("email"), profile.get("phone"), profile.get("location")]
+        contacts += [profile.get(k) for k in ("linkedin", "github") if profile.get(k)]
+        contact_line = "   |   ".join([_latin(c) for c in contacts if c])
+        pdf.set_font(font_fam, "", 8.5); pdf.set_text_color(241, 245, 249)
+        pdf.cell(0, 5, contact_line, new_x="LMARGIN", new_y="NEXT")
+        pdf.set_draw_color(*accent_rgb); pdf.set_line_width(0.8)
+        pdf.line(0, 36, pdf.w, 36)
+        pdf.set_xy(16, 40)
+
     for block in profile_to_blocks(profile):
         kind = block[0]
         if kind == "name":
+            if has_banner:
+                continue
             font("B", 20, block[1]); color_for(block[1], accent_rgb)
             align_char = "L" if header_layout in ("left", "dark_header") else "C"
             pdf.cell(0, 9, _latin(block[1]), align=align_char, new_x="LMARGIN", new_y="NEXT")
         elif kind == "contact":
+            if has_banner:
+                continue
             items, sep = [_latin(i) for i in block[1]], "   |   "
             font("", 9.5)
             if header_layout in ("left", "dark_header"):
@@ -621,16 +673,6 @@ def build_resume_pdf(profile: dict, path: str | None = None, template_id: str = 
             font("", 10, block[1]); color_for(block[1])
             pdf.multi_cell(W - 6, 4.8, _latin(block[1]), new_x="LMARGIN", new_y="NEXT")
 
-    data = bytes(pdf.output())
-    if path:
-        with open(path, "wb") as fh:
-            fh.write(data)
-    return data
-    data = bytes(pdf.output())
-    if path:
-        with open(path, "wb") as fh:
-            fh.write(data)
-    return data
     data = bytes(pdf.output())
     if path:
         with open(path, "wb") as fh:

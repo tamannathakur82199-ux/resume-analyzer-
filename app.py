@@ -15,10 +15,249 @@ from report_generator import build_report_pdf
 from resume_builder import (build_resume_docx, build_resume_pdf, build_tailored_profile,
                             is_ph, profile_from_fields)
 from resume_parser import extract_text, parse_resume
-from resume_templates import (COLOR_PALETTE, DUMMY_PROFILES, RESUME_TEMPLATES,
-                              get_dummy_profile, get_template, hex_to_rgb,
-                              profile_to_form_text, render_template_html,
-                              render_template_thumbnail)
+try:
+    from resume_templates import (COLOR_PALETTE, DUMMY_PROFILES, RESUME_TEMPLATES,
+                                  get_dummy_profile, get_template, hex_to_rgb,
+                                  profile_to_form_text, render_template_html,
+                                  render_template_thumbnail)
+    HAS_TEMPLATES = True
+except ImportError:
+    HAS_TEMPLATES = True
+    COLOR_PALETTE = [
+        {"id": "rainbow", "name": "Default Theme", "hex": "#0284C7", "is_rainbow": True, "title": "Rainbow Palette"},
+        {"id": "charcoal", "name": "Charcoal Slate", "hex": "#52525B", "rgb": (82, 82, 91), "title": "Charcoal"},
+        {"id": "navy", "name": "Deep Royal Navy", "hex": "#1E3A8A", "rgb": (30, 58, 138), "title": "Royal Navy"},
+        {"id": "purple", "name": "Royal Violet", "hex": "#7C3AED", "rgb": (124, 58, 237), "title": "Purple"},
+        {"id": "blue", "name": "Cerulean Blue", "hex": "#0284C7", "rgb": (2, 132, 199), "title": "Cerulean Blue"},
+        {"id": "teal", "name": "Emerald Teal", "hex": "#0D9488", "rgb": (13, 148, 136), "title": "Teal"},
+        {"id": "green", "name": "Forest Green", "hex": "#15803D", "rgb": (21, 128, 61), "title": "Forest Green"},
+        {"id": "rust", "name": "Brick Crimson", "hex": "#991B1B", "rgb": (153, 27, 27), "title": "Rust / Red"},
+        {"id": "coral", "name": "Sunset Coral", "hex": "#FB923C", "rgb": (251, 146, 60), "title": "Coral / Peach"},
+        {"id": "yellow", "name": "Amber Gold", "hex": "#F59E0B", "rgb": (245, 158, 11), "title": "Golden Yellow"},
+        {"id": "monochrome", "name": "Minimalist Black", "hex": "#18181B", "rgb": (24, 24, 27), "is_mono": True, "title": "No Color / Monochrome"},
+    ]
+
+    def hex_to_rgb(hex_str: str) -> tuple[int, int, int]:
+        hex_str = hex_str.lstrip("#")
+        if len(hex_str) == 6:
+            return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+        return (31, 56, 100)
+
+    RESUME_TEMPLATES = {
+        "sidebar_modern": {"id": "sidebar_modern", "name": "Modern Two-Column Sidebar", "badge": "Studio Favorite", "category": "Modern / Two-Column", "icon": "📄", "accent_hex": "#0284C7", "accent_rgb": (2, 132, 199), "font_family_docx": "Arial", "font_family_pdf": "Helvetica", "header_layout": "sidebar", "rule_style": "thick", "bullet_style": "disc"},
+        "classic_serif": {"id": "classic_serif", "name": "Classic Centered Serif", "badge": "100% ATS Scannable", "category": "Traditional / ATS", "icon": "🏛️", "accent_hex": "#1F3864", "accent_rgb": (31, 56, 100), "font_family_docx": "Georgia", "font_family_pdf": "Times", "header_layout": "center", "rule_style": "solid", "bullet_style": "disc"},
+        "top_banner": {"id": "top_banner", "name": "Modern Top Accent Banner", "badge": "Visual Impact", "category": "Contemporary / Banner", "icon": "🎨", "accent_hex": "#15803D", "accent_rgb": (21, 128, 61), "font_family_docx": "Calibri", "font_family_pdf": "Helvetica", "header_layout": "top_banner", "rule_style": "pill", "bullet_style": "disc"},
+        "executive_header": {"id": "executive_header", "name": "Executive Dark Banner", "badge": "Executive Suite", "category": "Management / Executive", "icon": "👑", "accent_hex": "#1E293B", "accent_rgb": (30, 41, 59), "font_family_docx": "Georgia", "font_family_pdf": "Helvetica", "header_layout": "dark_header", "rule_style": "double", "bullet_style": "square"},
+        "modern_tech": {"id": "modern_tech", "name": "Modern Tech & Cloud", "badge": "Devs & Cloud", "category": "Engineering & IT", "icon": "⚡", "accent_hex": "#0284C7", "accent_rgb": (2, 132, 199), "font_family_docx": "Arial", "font_family_pdf": "Helvetica", "header_layout": "left", "rule_style": "thick", "bullet_style": "arrow"},
+        "creative_designer": {"id": "creative_designer", "name": "Creative Studio & UI/UX", "badge": "Designers & Portfolio", "category": "Design & Creative", "icon": "🖌️", "accent_hex": "#7C3AED", "accent_rgb": (124, 58, 237), "font_family_docx": "Calibri", "font_family_pdf": "Helvetica", "header_layout": "left", "rule_style": "pill", "bullet_style": "circle"},
+        "ivy_academic": {"id": "ivy_academic", "name": "Ivy Academic & Research", "badge": "PhD, Papers & Grants", "category": "Academia & Research", "icon": "🎓", "accent_hex": "#881337", "accent_rgb": (136, 19, 55), "font_family_docx": "Georgia", "font_family_pdf": "Times", "header_layout": "center", "rule_style": "solid", "bullet_style": "dash"},
+        "emerald_finance": {"id": "emerald_finance", "name": "Emerald Professional (Finance)", "badge": "Banking & Advisory", "category": "Finance & Consulting", "icon": "📈", "accent_hex": "#065F46", "accent_rgb": (6, 95, 70), "font_family_docx": "Calibri", "font_family_pdf": "Helvetica", "header_layout": "center", "rule_style": "solid", "bullet_style": "disc"},
+        "compact_fresher": {"id": "compact_fresher", "name": "Compact 1-Page (Fresher)", "badge": "Guaranteed 1-Page", "category": "Students & Entry-Level", "icon": "🌱", "accent_hex": "#0D9488", "accent_rgb": (13, 148, 136), "font_family_docx": "Arial", "font_family_pdf": "Helvetica", "header_layout": "center", "rule_style": "minimal", "bullet_style": "disc"},
+        "data_science_ai": {"id": "data_science_ai", "name": "Data Science & AI Specialist", "badge": "ML, LLMs & Analytics", "category": "AI, ML & Big Data", "icon": "🤖", "accent_hex": "#2563EB", "accent_rgb": (37, 99, 235), "font_family_docx": "Consolas", "font_family_pdf": "Helvetica", "header_layout": "left", "rule_style": "thick", "bullet_style": "arrow"},
+        "startup_growth": {"id": "startup_growth", "name": "Startup Product & Growth", "badge": "0-to-1 & Scale", "category": "Product & Growth", "icon": "🚀", "accent_hex": "#EA580C", "accent_rgb": (234, 88, 12), "font_family_docx": "Calibri", "font_family_pdf": "Helvetica", "header_layout": "left", "rule_style": "pill", "bullet_style": "disc"},
+        "euro_international": {"id": "euro_international", "name": "Europass Modern International", "badge": "Global Standards", "category": "International Careers", "icon": "🌍", "accent_hex": "#1D4ED8", "accent_rgb": (29, 78, 216), "font_family_docx": "Arial", "font_family_pdf": "Helvetica", "header_layout": "split", "rule_style": "solid", "bullet_style": "dash"},
+    }
+
+    def get_template(tid: str) -> dict:
+        return RESUME_TEMPLATES.get(tid, RESUME_TEMPLATES["sidebar_modern"])
+
+    DUMMY_PROFILES = {
+        "sidebar_modern": {
+            "name": "Saanvi Patel",
+            "email": "saanvipatel@sample.in",
+            "phone": "+91 97170 54977",
+            "location": "New Delhi, India 110014",
+            "linkedin": "linkedin.com/in/saanvi-patel-sales",
+            "github": "",
+            "summary": "Motivated Retail Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service. Resourceful expert at training customer needs, directing to desirable merchandise and upselling to meet sales quotas. Committed to strengthening customer experience with positivity and professionalism when answering inquiries and processing sales.",
+            "skills": {
+                "Core Skills": ["Stock opening and closing", "Sales expertise", "Accurate Money Handling", "Store Merchandising", "Loss prevention", "Product promotions"],
+                "Customer Operations": ["POS Terminal Operation", "Inventory Audits", "Customer Retention", "Conflict Resolution", "Merchandising Displays"],
+            },
+            "experience": [
+                {
+                    "heading": "Retail Sales Associate",
+                    "date": "07/2016 - Current",
+                    "sub": "ABC Store, New Delhi",
+                    "bullets": [
+                        "Effectively upsold products by introducing accessories and other add-ons, adding ₹8,000 to average monthly sales.",
+                        "Maintained 95%+ positive customer feedback and repeat visit loyalty.",
+                        "Used consultant sales approach to understand customer needs and recommend relevant product offerings.",
+                    ],
+                },
+                {
+                    "heading": "Barista",
+                    "date": "01/2015 - 06/2016",
+                    "sub": "Starbucks, New Delhi",
+                    "bullets": [
+                        "Created over 60 drinks per hour with consistently positive customer satisfaction scores.",
+                        "Greeted customers, took orders and prepared drinks to exact standards.",
+                        "Handled cash register transactions with zero variance.",
+                    ],
+                },
+            ],
+            "education": [
+                {"heading": "Diploma: Financial Accounting", "date": "June 2016", "sub": "Oxford Business Institute & Oxford School of English, New Delhi, India", "bullets": []}
+            ],
+            "certifications": ["Certified Retail Customer Specialist", "Advanced Point-of-Sale (POS) Operations"],
+            "achievements": ["Top Sales Performer Q3 2024", "Employee of the Month (Twice)"],
+        }
+    }
+
+    def get_dummy_profile(tid: str) -> dict:
+        return DUMMY_PROFILES.get(tid, DUMMY_PROFILES["sidebar_modern"])
+
+    def profile_to_form_text(profile: dict) -> dict:
+        return {}
+
+    def render_template_html(p: dict, tid: str = "", custom_accent_hex: str = "") -> str:
+        return ""
+
+    _FALLBACK_AVATAR = """<svg viewBox="0 0 80 90" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;"><rect width="80" height="90" fill="#E2E8F0" rx="3"/><path d="M22 34 C22 14, 58 14, 58 34 C58 52, 54 62, 53 66 C49 66, 47 54, 46 48 C34 48, 32 66, 27 66 C26 62, 22 52, 22 34 Z" fill="#475569"/><path d="M35 44 L45 44 L47 56 L33 56 Z" fill="#CBD5E1"/><path d="M28 32 C28 22, 52 22, 52 32 C52 42, 47 48, 40 48 C33 48, 28 42, 28 32 Z" fill="#F8FAFC"/><path d="M24 32 C26 20, 39 20, 40 26 C41 20, 54 20, 56 32 C58 42, 54 50, 52 54 C50 44, 48 30, 40 30 C32 30, 30 44, 28 54 C26 50, 22 42, 24 32 Z" fill="#334155"/><path d="M16 82 C18 64, 28 56, 40 56 C52 56, 62 64, 64 82 Z" fill="#64748B"/></svg>"""
+    _FALLBACK_AVATAR_CIRCLE = """<svg viewBox="0 0 80 80" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;"><circle cx="40" cy="40" r="39" fill="#E2E8F0"/><path d="M22 30 C22 14, 58 14, 58 30 C58 48, 54 58, 53 62 C49 62, 47 50, 46 44 C34 44, 32 62, 27 62 C26 58, 22 48, 22 30 Z" fill="#475569"/><path d="M35 40 L45 40 L47 52 L33 52 Z" fill="#CBD5E1"/><path d="M28 28 C28 18, 52 18, 52 28 C52 38, 47 44, 40 44 C33 44, 28 38, 28 28 Z" fill="#F8FAFC"/><path d="M24 28 C26 16, 39 16, 40 22 C41 16, 54 16, 56 28 C58 38, 54 46, 52 50 C50 40, 48 26, 40 26 C32 26, 30 40, 28 50 C26 46, 22 38, 24 28 Z" fill="#334155"/><path d="M16 78 C18 60, 28 52, 40 52 C52 52, 62 60, 64 78 Z" fill="#64748B"/></svg>"""
+
+    def render_template_thumbnail(template_id: str, accent_hex: str = "", is_selected: bool = False) -> str:
+        tpl = get_template(template_id)
+        color = accent_hex if accent_hex and accent_hex != "#0284C7_rainbow" else tpl["accent_hex"]
+        name = "Saanvi Patel"
+        selected_border = "border: 2px solid #0284c7; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28);" if is_selected else "border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(0,0,0,0.05);"
+        selected_badge = '<div style="position:absolute; top:8px; right:8px; background:#0284c7; color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:12px; z-index:10; box-shadow:0 1px 4px rgba(0,0,0,0.2);">✓ Selected</div>' if is_selected else ''
+
+        if template_id == "sidebar_modern":
+            sidebar_bg = color if color and color != "#0284C7" else "#1b4d6b"
+            inner = f"""
+            <div style="display:flex; height:100%; width:100%; font-family:'Segoe UI', Inter, sans-serif; font-size:7px; background:#ffffff;">
+              <div style="width:33%; background:{sidebar_bg}; color:#ffffff; padding:10px 8px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center;">
+                <div style="width:38px; height:38px; border-radius:50%; overflow:hidden; margin-bottom:6px; border:1.5px solid rgba(255,255,255,0.4);">{_FALLBACK_AVATAR_CIRCLE}</div>
+                <div style="font-size:10.5px; font-weight:800; text-align:center; line-height:1.15; color:#ffffff; margin-bottom:2px;">{name}</div>
+                <div style="font-size:7px; opacity:0.85; text-align:center; margin-bottom:8px;">Profession</div>
+                <div style="width:100%; font-size:7.5px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.3); padding-bottom:1px; margin-bottom:3px; text-transform:uppercase;">Contact</div>
+                <div style="width:100%; font-size:6px; opacity:0.92; margin-bottom:8px; line-height:1.25;">
+                  <div>New Delhi, India, 110014</div>
+                  <div>+91 97170 54977</div>
+                  <div>saanvipatel@sample.in</div>
+                </div>
+                <div style="width:100%; font-size:7.5px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.3); padding-bottom:1px; margin-bottom:3px; text-transform:uppercase;">Skills</div>
+                <div style="width:100%; font-size:6px; opacity:0.92; line-height:1.3;">
+                  <div>• Stock opening and closing</div>
+                  <div>• Sales expertise</div>
+                  <div>• Accurate Money Handling</div>
+                  <div>• Store Merchandising</div>
+                  <div>• Loss prevention</div>
+                </div>
+              </div>
+              <div style="width:67%; background:#ffffff; padding:10px 10px; box-sizing:border-box; overflow:hidden;">
+                <div style="font-size:8.5px; font-weight:800; color:{sidebar_bg}; margin-bottom:2px;">Education</div>
+                <div style="font-size:6px; color:#64748b; margin-bottom:1px;">June 2016 <strong style="color:#0f172a; margin-left:3px; font-size:6.8px;">Diploma: Financial Accounting</strong></div>
+                <div style="font-size:5.8px; color:#475569; margin-bottom:5px;">Oxford Business Institute, New Delhi</div>
+                <div style="font-size:5.8px; color:#475569; line-height:1.25; margin-bottom:6px; border-left:2px solid {sidebar_bg}30; padding-left:4px;">
+                  Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service.
+                </div>
+                <div style="font-size:8.5px; font-weight:800; color:{sidebar_bg}; margin-bottom:2px;">Work History</div>
+                <div style="font-size:6px; color:#64748b;">2016-07 - Current <strong style="color:#0f172a; margin-left:3px; font-size:6.8px;">Retail Sales Associate</strong></div>
+                <div style="font-size:5.8px; color:#64748b; margin-bottom:2px;">ABC Store, New Delhi</div>
+                <div style="font-size:5.8px; color:#334155; line-height:1.25; margin-bottom:5px;">
+                  <div>• Effectively upsold products, adding ₹8,000 monthly.</div>
+                  <div>• Maintained top positive customer reviews.</div>
+                </div>
+                <div style="font-size:6px; color:#64748b;">2015-01 - 2016-06 <strong style="color:#0f172a; margin-left:3px; font-size:6.8px;">Barista</strong></div>
+                <div style="font-size:5.8px; color:#64748b; margin-bottom:2px;">Starbucks - New Delhi</div>
+                <div style="font-size:5.8px; color:#334155; line-height:1.25;">
+                  <div>• Handled peak transactions with zero error.</div>
+                </div>
+              </div>
+            </div>
+            """
+        elif template_id in ("classic_serif", "classic_ats"):
+            inner = f"""
+            <div style="height:100%; width:100%; background:#ffffff; padding:12px 14px; box-sizing:border-box; font-family:'Times New Roman', Georgia, serif; text-align:center; overflow:hidden;">
+              <div style="font-size:13px; font-weight:800; letter-spacing:0.06em; color:#0f172a; text-transform:uppercase;">SAANVI PATEL</div>
+              <div style="font-size:7px; color:#475569; font-style:italic; margin-top:1px;">PROFESSION</div>
+              <div style="font-size:6px; color:#64748b; margin-top:2px;">New Delhi, India 110014 | +91 97170 54977 | saanvipatel@sample.in</div>
+              <div style="border-top:1.5px solid #0f172a; border-bottom:0.5px solid #0f172a; height:2px; margin:4px 0 6px 0;"></div>
+              <div style="font-size:7.5px; font-weight:800; color:#0f172a; text-transform:uppercase; margin-bottom:2px;">EDUCATION</div>
+              <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting, June 2016</div>
+              <div style="font-size:5.8px; color:#64748b; margin-bottom:5px;">Oxford Business Institute, New Delhi</div>
+              <div style="font-size:7.5px; font-weight:800; color:#0f172a; text-transform:uppercase; margin-bottom:2px;">PROFESSIONAL SUMMARY</div>
+              <div style="font-size:5.8px; color:#475569; text-align:justify; line-height:1.25; margin-bottom:5px;">Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty.</div>
+              <div style="font-size:7.5px; font-weight:800; color:#0f172a; text-transform:uppercase; margin-bottom:2px;">SKILLS</div>
+              <div style="display:flex; justify-content:space-between; font-size:5.8px; color:#334155; text-align:left; margin-bottom:5px; padding:0 12px;">
+                <div>• Stock opening and closing<br>• Accurate Money Handling</div>
+                <div>• Sales expertise<br>• Store Merchandising</div>
+              </div>
+              <div style="font-size:7.5px; font-weight:800; color:#0f172a; text-transform:uppercase; margin-bottom:2px;">WORK HISTORY</div>
+              <div style="font-size:6.8px; font-weight:700; color:#1e293b; text-align:left;">Retail Sales Associate (07/2016 - Current)</div>
+              <div style="font-size:5.8px; color:#475569; text-align:left; line-height:1.25;"><div>• Effectively upsold products, adding ₹8,000 to monthly sales.</div></div>
+            </div>
+            """
+        elif template_id == "top_banner":
+            banner_green = color if color and color != "#0284C7" else "#65a30d"
+            inner = f"""
+            <div style="height:100%; width:100%; background:#ffffff; box-sizing:border-box; display:flex; flex-direction:column; font-family:'Segoe UI', Inter, sans-serif; overflow:hidden;">
+              <div style="background:{banner_green}; color:#ffffff; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:13px; font-weight:800; color:#ffffff; line-height:1.1;">{name}</div>
+                  <div style="font-size:7px; color:rgba(255,255,255,0.9); margin-top:2px; margin-bottom:4px;">Profession</div>
+                  <div style="font-size:5.8px; color:rgba(255,255,255,0.95); line-height:1.3;">
+                    <div>📍 New Delhi, India 110014</div>
+                    <div>📞 +91 97170 54977</div>
+                    <div>✉️ saanvipatel@sample.in</div>
+                  </div>
+                </div>
+                <div style="width:40px; height:46px; border-radius:3px; overflow:hidden; border:1.5px solid rgba(255,255,255,0.6);">{_FALLBACK_AVATAR}</div>
+              </div>
+              <div style="padding:8px 12px; flex:1; background:#ffffff;">
+                <div style="display:flex; align-items:center; gap:4px; font-size:7.5px; font-weight:800; color:{banner_green}; text-transform:uppercase; margin-bottom:2px;"><span style="color:{banner_green};">●</span> Education</div>
+                <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting</div>
+                <div style="font-size:5.8px; color:#64748b; margin-bottom:5px;">Oxford Business Institute, New Delhi (June 2016)</div>
+                <div style="display:flex; align-items:center; gap:4px; font-size:7.5px; font-weight:800; color:{banner_green}; text-transform:uppercase; margin-bottom:2px;"><span style="color:{banner_green};">●</span> Work History</div>
+                <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Retail Sales Associate (07/2016 - Current)</div>
+                <div style="font-size:5.8px; color:#475569; line-height:1.25;"><div>• Boosted monthly sales volume by ₹8,000 via add-ons.</div></div>
+              </div>
+            </div>
+            """
+        elif template_id in ("executive_header", "executive_suite"):
+            inner = f"""
+            <div style="height:100%; width:100%; background:#ffffff; box-sizing:border-box; display:flex; flex-direction:column; font-family:'Segoe UI', Inter, sans-serif; overflow:hidden;">
+              <div style="background:#262b30; color:#ffffff; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:13px; font-weight:800; color:#ffffff; line-height:1.1;">{name}</div>
+                  <div style="font-size:7px; color:rgba(255,255,255,0.7); margin-top:2px; margin-bottom:4px;">Profession</div>
+                  <div style="font-size:5.8px; color:rgba(255,255,255,0.85); line-height:1.3;">
+                    <div>Address: New Delhi, India 110014</div>
+                    <div>Phone: +91 97170 54977</div>
+                    <div>Email: saanvipatel@sample.in</div>
+                  </div>
+                </div>
+                <div style="width:40px; height:46px; border-radius:3px; overflow:hidden; border:1px solid rgba(255,255,255,0.3);">{_FALLBACK_AVATAR}</div>
+              </div>
+              <div style="padding:8px 12px; flex:1; background:#ffffff;">
+                <div style="display:flex; align-items:center; gap:4px; font-size:7.5px; font-weight:800; color:#1e293b; text-transform:uppercase; margin-bottom:2px;"><span style="color:{color};">◆</span> Education</div>
+                <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting, June 2016</div>
+                <div style="font-size:5.8px; color:#64748b; margin-bottom:5px;">Oxford Business Institute, New Delhi</div>
+                <div style="display:flex; align-items:center; gap:4px; font-size:7.5px; font-weight:800; color:#1e293b; text-transform:uppercase; margin-bottom:2px;"><span style="color:{color};">◆</span> Work History</div>
+                <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Retail Sales Associate (07/2016 - Current)</div>
+                <div style="font-size:5.8px; color:#475569; line-height:1.25;"><div>• Controlled merchandising and boosted revenue.</div></div>
+              </div>
+            </div>
+            """
+        else:
+            inner = f"""
+            <div style="height:100%; width:100%; background:#ffffff; padding:12px; box-sizing:border-box;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid {color}; padding-bottom:4px; margin-bottom:6px;">
+                <span style="font-size:11px; font-weight:800; color:{color};">{tpl['name']}</span>
+                <span style="font-size:6px; color:#64748b;">[{tpl['badge']}]</span>
+              </div>
+              <div style="font-size:7px; font-weight:700; color:#1e293b; margin-bottom:2px;">{name}</div>
+              <div style="font-size:6px; color:#64748b; margin-bottom:6px;">New Delhi, India | +91 97170 54977</div>
+            </div>
+            """
+        return f"""
+        <div style="position:relative; width:100%; height:320px; border-radius:6px; overflow:hidden; {selected_border} transition:all 0.2s ease-in-out; margin-bottom:6px; background:#ffffff;">
+          {selected_badge}
+          {inner}
+        </div>
+        """
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_JD = os.path.join(HERE, "sample_data", "job_description.txt")
@@ -313,32 +552,117 @@ st.markdown(
           line-height: 1.2;
       }
       .studio-subheading {
-          font-size: 1.15rem;
+          font-size: 1.25rem;
           font-weight: 700;
-          color: #1e293b;
+          color: #0f172a;
           margin: 18px 0 12px 0;
       }
-      .swatch-bar-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 0 14px 0;
-          overflow-x: auto;
+
+      /* Studio Left Toolbar Buttons */
+      div[data-testid="column"]:has(button[key^="nav_studio_"]) button {
+          min-height: 56px !important;
+          height: auto !important;
+          border-radius: 10px !important;
+          padding: 8px 10px !important;
+          text-align: center !important;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          justify-content: center !important;
+          margin-bottom: 6px !important;
+          border: 1px solid #e2e8f0 !important;
+          background: #ffffff !important;
+          box-shadow: none !important;
+          transition: all 0.15s ease !important;
       }
-      .swatch-item {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          border: 2px solid #ffffff;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-          cursor: pointer;
-          display: inline-block;
-          flex-shrink: 0;
-          transition: all 0.15s ease-in-out;
+      div[data-testid="column"]:has(button[key^="nav_studio_"]) button p {
+          text-align: center !important;
+          margin: 0 !important;
+          font-size: 0.8rem !important;
+          font-weight: 600 !important;
+          color: #475569 !important;
       }
-      .swatch-item.active {
-          box-shadow: 0 0 0 2px #ffffff, 0 0 0 4.5px #0284c7;
-          transform: scale(1.1);
+      div[data-testid="column"]:has(button[key^="nav_studio_"]) button[kind="primary"] {
+          background: #f0f7ff !important;
+          border: 1.5px solid #0284c7 !important;
+      }
+      div[data-testid="column"]:has(button[key^="nav_studio_"]) button[kind="primary"] p {
+          color: #0284c7 !important;
+          font-weight: 700 !important;
+      }
+
+      /* Swatch Circular Buttons */
+      div[data-testid="column"]:has(button[key^="sw_"]) {
+          padding: 0 !important;
+          min-width: 32px !important;
+          max-width: 38px !important;
+      }
+      div[data-testid="column"]:has(button[key^="sw_"]) button {
+          width: 30px !important;
+          height: 30px !important;
+          min-height: 30px !important;
+          max-height: 30px !important;
+          border-radius: 50% !important;
+          padding: 0 !important;
+          margin: 3px auto !important;
+          border: none !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
+          cursor: pointer !important;
+          display: block !important;
+          transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+      }
+      div[data-testid="column"]:has(button[key^="sw_"]) button p {
+          display: none !important;
+      }
+      div[data-testid="column"]:has(button[key^="sw_"]) button:hover {
+          transform: scale(1.15) !important;
+      }
+      button[key="sw_rainbow"] {
+          background: conic-gradient(#ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0000ff, #8000ff, #ff0080, #ff0000) !important;
+      }
+      button[key="sw_charcoal"] { background: #64748B !important; }
+      button[key="sw_navy"] { background: #1E3A8A !important; }
+      button[key="sw_purple"] { background: #7C3AED !important; }
+      button[key="sw_blue"] { background: #0284C7 !important; }
+      button[key="sw_teal"] { background: #0D9488 !important; }
+      button[key="sw_green"] { background: #15803D !important; }
+      button[key="sw_rust"] { background: #991B1B !important; }
+      button[key="sw_coral"] { background: #FB923C !important; }
+      button[key="sw_yellow"] { background: #F59E0B !important; }
+      button[key="sw_monochrome"] {
+          background: linear-gradient(135deg, #ffffff 44%, #94a3b8 48%, #94a3b8 52%, #ffffff 56%) !important;
+          border: 1.5px solid #94a3b8 !important;
+      }
+
+      /* Studio Close Button (✕) */
+      button[key="studio_close_btn"] {
+          background: transparent !important;
+          border: none !important;
+          color: #0284c7 !important;
+          font-size: 26px !important;
+          font-weight: 700 !important;
+          line-height: 1 !important;
+          min-height: 36px !important;
+          height: 36px !important;
+          width: 36px !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+          float: right !important;
+          margin-left: auto !important;
+      }
+      button[key="studio_close_btn"]:hover {
+          color: #0369a1 !important;
+          background: rgba(2, 132, 199, 0.08) !important;
+          border-radius: 50% !important;
+      }
+
+      /* Template Select Button */
+      div[data-testid="column"]:has(button[key^="sel_tpl_"]) button {
+          min-height: 34px !important;
+          height: 34px !important;
+          padding: 4px 14px !important;
+          font-size: 0.85rem !important;
+          border-radius: 6px !important;
       }
     </style>
     """,
@@ -532,16 +856,9 @@ if active_tab == "Analyze & Shortlist":
     st.markdown('<div class="step-label">Step 1 — Add the job description</div>', unsafe_allow_html=True)
     with st.container(border=True):
         st.markdown('<div class="step-subcard"><span style="color:#2563eb; font-size:1.15rem;">📄</span> Upload job description or paste its text</div>', unsafe_allow_html=True)
-        c1, c2 = st.columns([1.2, 1])
-        with c1:
-            if st.button("📄 Load sample job description", use_container_width=True):
-                if os.path.exists(SAMPLE_JD):
-                    with open(SAMPLE_JD, encoding="utf-8") as fh:
-                        st.session_state["jd_text"] = fh.read()
-        with c2:
-            jd_file = st.file_uploader("Upload JD", type=["txt", "pdf", "docx"], key="jd_file", label_visibility="collapsed")
-            if jd_file is not None:
-                st.session_state["jd_text"] = extract_text(jd_file.getvalue(), jd_file.name)[0]
+        jd_file = st.file_uploader("Upload JD (.txt, .pdf, .docx)", type=["txt", "pdf", "docx"], key="jd_file", label_visibility="collapsed")
+        if jd_file is not None:
+            st.session_state["jd_text"] = extract_text(jd_file.getvalue(), jd_file.name)[0]
 
         jd_text = st.text_area(
             "Job Description",
@@ -934,6 +1251,9 @@ elif active_tab == "Build Resume":
     st.markdown('<div class="section-heading">Resume Builder Studio</div>', unsafe_allow_html=True)
     st.caption("Visual Resume Studio: Select visual templates, customize color palettes, edit content, and generate ATS-compliant PDF & Word resumes.")
 
+    if not HAS_TEMPLATES:
+        st.warning("⚠️ **Missing File on GitHub:** `resume_templates.py` file is missing in your GitHub repository! Please upload `resume_templates.py` from your project folder to your GitHub repo so the templates and swatches can load.")
+
     # State initialization
     if "studio_nav_tab" not in st.session_state:
         st.session_state["studio_nav_tab"] = "Templates"
@@ -981,56 +1301,56 @@ elif active_tab == "Build Resume":
     with col_workspace:
         # =================================================================== TAB 1: TEMPLATES (SCREENSHOT REPLICA)
         if active_studio_nav == "Templates":
-            # Header Row
-            hdr_col1, hdr_col2 = st.columns([4, 1])
+            # Header Row matching screenshot: "Templates" + blue "✕" icon
+            hdr_col1, hdr_col2 = st.columns([5.5, 0.5])
             with hdr_col1:
                 st.markdown('<div class="studio-header-title">Templates</div>', unsafe_allow_html=True)
             with hdr_col2:
-                if st.button("✕ Edit Details", key="studio_close_btn", help="Switch to Content Editor", use_container_width=True):
+                if st.button("✕", key="studio_close_btn", help="Close Templates & Edit Details"):
                     st.session_state["studio_nav_tab"] = "Add section"
                     st.rerun()
 
-            # Color Palette Swatches (Horizontal Strip matching screenshot)
-            st.markdown('<div style="font-size:0.84rem; font-weight:600; color:#475569; margin-top:8px;">Accent Palette</div>', unsafe_allow_html=True)
+            # Active swatch highlight styling
+            active_sw_id = "blue"
+            for sw in COLOR_PALETTE:
+                if sw["hex"].lower() == current_color_hex.lower():
+                    active_sw_id = sw["id"]
+                    break
+            st.markdown(f"""
+            <style>
+              button[key="sw_{active_sw_id}"] {{
+                  box-shadow: 0 0 0 2.5px #ffffff, 0 0 0 5px #0284c7 !important;
+                  transform: scale(1.15) !important;
+              }}
+            </style>
+            """, unsafe_allow_html=True)
 
-            swatch_cols = st.columns(len(COLOR_PALETTE))
-            for i, col in enumerate(swatch_cols):
+            # Color Palette Swatches (Horizontal Strip matching screenshot)
+            swatch_cols = st.columns([1] * len(COLOR_PALETTE) + [3])
+            for i in range(len(COLOR_PALETTE)):
                 sw_item = COLOR_PALETTE[i]
-                is_sw_active = (current_color_hex == sw_item["hex"])
-                with col:
-                    # Circular button representation
-                    dot_style = "🌈" if sw_item.get("is_rainbow") else ("⚪" if sw_item.get("is_mono") else "●")
-                    if st.button(dot_style, key=f"swatch_btn_{sw_item['id']}", help=sw_item["title"], use_container_width=True):
+                with swatch_cols[i]:
+                    if st.button(" ", key=f"sw_{sw_item['id']}", help=sw_item["title"]):
                         st.session_state["builder_color_hex"] = sw_item["hex"]
                         st.rerun()
-
-            st.markdown(f'<div style="font-size:0.78rem; color:#64748b; margin-top:-6px; margin-bottom:12px;">Active Color: <strong style="color:{current_color_hex};">{current_color_hex}</strong> (Click any dot to recolor all templates)</div>', unsafe_allow_html=True)
 
             # All Templates Section Heading
             st.markdown('<div class="studio-subheading">All templates</div>', unsafe_allow_html=True)
 
-            # 2-Column Template Cards Grid (Displaying visual thumbnails)
-            all_tpl_list = [
+            # 4 Featured Templates matching user screenshot in 2x2 Grid
+            featured_tpl_list = [
                 ("sidebar_modern", "Modern Two-Column Sidebar", "Studio Favorite"),
                 ("classic_serif", "Classic Centered Serif", "100% ATS Scannable"),
                 ("top_banner", "Modern Top Accent Banner", "Visual Impact"),
                 ("executive_header", "Executive Dark Banner", "Executive Suite"),
-                ("modern_tech", "Modern Tech & Cloud", "Devs & Cloud"),
-                ("creative_designer", "Creative Studio & UI/UX", "Designers & Portfolio"),
-                ("ivy_academic", "Ivy Academic & Research", "PhD, Papers & Grants"),
-                ("emerald_finance", "Emerald Professional (Finance)", "Banking & Advisory"),
-                ("compact_fresher", "Compact 1-Page (Fresher)", "Guaranteed 1-Page"),
-                ("data_science_ai", "Data Science & AI Specialist", "ML, LLMs & Analytics"),
-                ("startup_growth", "Startup Product & Growth", "0-to-1 & Scale"),
-                ("euro_international", "Europass Modern International", "Global Standards"),
             ]
 
-            # Render in rows of 2 columns
-            for row_idx in range(0, len(all_tpl_list), 2):
+            # Render 2x2 grid
+            for row_idx in range(0, len(featured_tpl_list), 2):
                 col_left, col_right = st.columns(2, gap="medium")
 
                 # Left Card
-                tpl_id_1, tpl_name_1, tpl_badge_1 = all_tpl_list[row_idx]
+                tpl_id_1, tpl_name_1, tpl_badge_1 = featured_tpl_list[row_idx]
                 is_sel_1 = (current_tpl_id == tpl_id_1)
                 with col_left:
                     thumb_html_1 = render_template_thumbnail(tpl_id_1, accent_hex=current_color_hex, is_selected=is_sel_1)
@@ -1044,9 +1364,9 @@ elif active_tab == "Build Resume":
                             st.session_state["builder_tpl_id"] = tpl_id_1
                             st.rerun()
 
-                # Right Card (if exists)
-                if row_idx + 1 < len(all_tpl_list):
-                    tpl_id_2, tpl_name_2, tpl_badge_2 = all_tpl_list[row_idx + 1]
+                # Right Card
+                if row_idx + 1 < len(featured_tpl_list):
+                    tpl_id_2, tpl_name_2, tpl_badge_2 = featured_tpl_list[row_idx + 1]
                     is_sel_2 = (current_tpl_id == tpl_id_2)
                     with col_right:
                         thumb_html_2 = render_template_thumbnail(tpl_id_2, accent_hex=current_color_hex, is_selected=is_sel_2)
@@ -1061,6 +1381,49 @@ elif active_tab == "Build Resume":
                                 st.rerun()
 
                 st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+
+            # More Templates Expander
+            more_tpl_list = [
+                ("modern_tech", "Modern Tech & Cloud", "Devs & Cloud"),
+                ("creative_designer", "Creative Studio & UI/UX", "Designers & Portfolio"),
+                ("ivy_academic", "Ivy Academic & Research", "PhD, Papers & Grants"),
+                ("emerald_finance", "Emerald Professional (Finance)", "Banking & Advisory"),
+                ("compact_fresher", "Compact 1-Page (Fresher)", "Guaranteed 1-Page"),
+                ("data_science_ai", "Data Science & AI Specialist", "ML, LLMs & Analytics"),
+                ("startup_growth", "Startup Product & Growth", "0-to-1 & Scale"),
+                ("euro_international", "Europass Modern International", "Global Standards"),
+            ]
+            with st.expander("➕ Explore More Specialized Templates (Tech, Design, Ivy, Finance, Fresher, AI)", expanded=False):
+                for row_idx in range(0, len(more_tpl_list), 2):
+                    col_left, col_right = st.columns(2, gap="medium")
+                    tpl_id_1, tpl_name_1, tpl_badge_1 = more_tpl_list[row_idx]
+                    is_sel_1 = (current_tpl_id == tpl_id_1)
+                    with col_left:
+                        thumb_html_1 = render_template_thumbnail(tpl_id_1, accent_hex=current_color_hex, is_selected=is_sel_1)
+                        st.markdown(thumb_html_1, unsafe_allow_html=True)
+                        tc1, tc2 = st.columns([2.5, 1.5])
+                        with tc1:
+                            st.markdown(f"**{tpl_name_1}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_1}</span>", unsafe_allow_html=True)
+                        with tc2:
+                            btn_txt_1 = "✓ Selected" if is_sel_1 else "Select"
+                            if st.button(btn_txt_1, key=f"sel_tpl_{tpl_id_1}", type="primary" if is_sel_1 else "secondary", use_container_width=True):
+                                st.session_state["builder_tpl_id"] = tpl_id_1
+                                st.rerun()
+                    if row_idx + 1 < len(more_tpl_list):
+                        tpl_id_2, tpl_name_2, tpl_badge_2 = more_tpl_list[row_idx + 1]
+                        is_sel_2 = (current_tpl_id == tpl_id_2)
+                        with col_right:
+                            thumb_html_2 = render_template_thumbnail(tpl_id_2, accent_hex=current_color_hex, is_selected=is_sel_2)
+                            st.markdown(thumb_html_2, unsafe_allow_html=True)
+                            tc1, tc2 = st.columns([2.5, 1.5])
+                            with tc1:
+                                st.markdown(f"**{tpl_name_2}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_2}</span>", unsafe_allow_html=True)
+                            with tc2:
+                                btn_txt_2 = "✓ Selected" if is_sel_2 else "Select"
+                                if st.button(btn_txt_2, key=f"sel_tpl_{tpl_id_2}", type="primary" if is_sel_2 else "secondary", use_container_width=True):
+                                    st.session_state["builder_tpl_id"] = tpl_id_2
+                                    st.rerun()
+                    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
         # =================================================================== TAB 2: DESIGN & FORMATTING
         elif active_studio_nav == "Design & formatting":
@@ -1080,7 +1443,7 @@ elif active_tab == "Build Resume":
                 st.selectbox("📐 Section Divider Line Style", options=["Solid Line", "Double Line", "Thick Accent Bar", "Pill Background", "Minimal (No Line)"], key="studio_rule_style")
                 st.select_slider("📄 Document Margin Spacing", options=["Tight (12 mm)", "Standard (16 mm)", "Spacious (20 mm)"], value="Standard (16 mm)", key="studio_margin_scale")
 
-            st.success("Design preferences applied! Preview your changes below.")
+            st.success("Design preferences applied to your resume template!")
 
         # =================================================================== TAB 3: ADD SECTION / EDIT DETAILS
         elif active_studio_nav == "Add section":
@@ -1229,16 +1592,9 @@ elif active_tab == "Tailor to Job":
         st.markdown('<div class="step-label">Step 2 — Target Job Description</div>', unsafe_allow_html=True)
         with st.container(border=True):
             st.markdown('<div class="step-subcard"><span style="color:#2563eb; font-size:1.15rem;">💼</span> Target company job description</div>', unsafe_allow_html=True)
-            t_sub1, t_sub2 = st.columns([1.2, 1])
-            with t_sub1:
-                if st.button("📄 Load sample JD", key="tailor_load_sample", use_container_width=True):
-                    if os.path.exists(SAMPLE_JD):
-                        with open(SAMPLE_JD, encoding="utf-8") as fh:
-                            st.session_state["tailor_jd_text"] = fh.read()
-            with t_sub2:
-                tailor_jd_file = st.file_uploader("Upload JD", type=["txt", "pdf", "docx"], key="tailor_jd_file", label_visibility="collapsed")
-                if tailor_jd_file is not None:
-                    st.session_state["tailor_jd_text"] = extract_text(tailor_jd_file.getvalue(), tailor_jd_file.name)[0]
+            tailor_jd_file = st.file_uploader("Upload JD (.txt, .pdf, .docx)", type=["txt", "pdf", "docx"], key="tailor_jd_file", label_visibility="collapsed")
+            if tailor_jd_file is not None:
+                st.session_state["tailor_jd_text"] = extract_text(tailor_jd_file.getvalue(), tailor_jd_file.name)[0]
 
             tailor_jd_text = st.text_area("JD text", key="tailor_jd_text", height=150, placeholder="Paste target job description here...", label_visibility="collapsed")
 
@@ -1354,12 +1710,6 @@ elif active_tab == "Tailor to Job":
                 key="tailor_pdf_btn",
                 use_container_width=True
             )
-
-        with st.expander("👁️ Live Formatted Resume Preview", expanded=False):
-            prof = t_data["profile"]
-            tpl_used = t_data.get("template_id", "classic_ats")
-            live_html = render_template_html(prof, template_id=tpl_used)
-            st.markdown(live_html, unsafe_allow_html=True)
 
 
 # ===========================================================================

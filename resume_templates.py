@@ -847,6 +847,38 @@ def get_dummy_profile(template_id: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# FEMALE SILHOUETTE AVATAR SVG (MATCHING USER SCREENSHOT)
+# ---------------------------------------------------------------------------
+WOMAN_AVATAR_SVG = """<svg viewBox="0 0 80 90" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+  <rect width="80" height="90" fill="#E2E8F0" rx="3"/>
+  <!-- Hair back -->
+  <path d="M22 34 C22 14, 58 14, 58 34 C58 52, 54 62, 53 66 C49 66, 47 54, 46 48 C34 48, 32 66, 27 66 C26 62, 22 52, 22 34 Z" fill="#475569"/>
+  <!-- Neck -->
+  <path d="M35 44 L45 44 L47 56 L33 56 Z" fill="#CBD5E1"/>
+  <!-- Face -->
+  <path d="M28 32 C28 22, 52 22, 52 32 C52 42, 47 48, 40 48 C33 48, 28 42, 28 32 Z" fill="#F8FAFC"/>
+  <!-- Hair front style with parting -->
+  <path d="M24 32 C26 20, 39 20, 40 26 C41 20, 54 20, 56 32 C58 42, 54 50, 52 54 C50 44, 48 30, 40 30 C32 30, 30 44, 28 54 C26 50, 22 42, 24 32 Z" fill="#334155"/>
+  <!-- Shoulders -->
+  <path d="M16 82 C18 64, 28 56, 40 56 C52 56, 62 64, 64 82 Z" fill="#64748B"/>
+</svg>"""
+
+WOMAN_AVATAR_CIRCLE_SVG = """<svg viewBox="0 0 80 80" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+  <circle cx="40" cy="40" r="39" fill="#E2E8F0"/>
+  <!-- Hair back -->
+  <path d="M22 30 C22 14, 58 14, 58 30 C58 48, 54 58, 53 62 C49 62, 47 50, 46 44 C34 44, 32 62, 27 62 C26 58, 22 48, 22 30 Z" fill="#475569"/>
+  <!-- Neck -->
+  <path d="M35 40 L45 40 L47 52 L33 52 Z" fill="#CBD5E1"/>
+  <!-- Face -->
+  <path d="M28 28 C28 18, 52 18, 52 28 C52 38, 47 44, 40 44 C33 44, 28 38, 28 28 Z" fill="#F8FAFC"/>
+  <!-- Hair front style with parting -->
+  <path d="M24 28 C26 16, 39 16, 40 22 C41 16, 54 16, 56 28 C58 38, 54 46, 52 50 C50 40, 48 26, 40 26 C32 26, 30 40, 28 50 C26 46, 22 38, 24 28 Z" fill="#334155"/>
+  <!-- Shoulders -->
+  <path d="M16 78 C18 60, 28 52, 40 52 C52 52, 62 60, 64 78 Z" fill="#64748B"/>
+</svg>"""
+
+
+# ---------------------------------------------------------------------------
 # MINIATURE THUMBNAIL CARD GENERATOR (EXACTLY MATCHING SCREENSHOT)
 # ---------------------------------------------------------------------------
 def render_template_thumbnail(template_id: str, accent_hex: str = "", is_selected: bool = False) -> str:
@@ -855,54 +887,67 @@ def render_template_thumbnail(template_id: str, accent_hex: str = "", is_selecte
     color = accent_hex if accent_hex and accent_hex != "#0284C7_rainbow" else tpl["accent_hex"]
     name = "Saanvi Patel"
 
-    selected_border = "border: 2.5px solid #0284c7; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28);" if is_selected else "border: 1px solid #d1d5db; box-shadow: 0 2px 6px rgba(0,0,0,0.06);"
+    selected_border = "border: 2px solid #0284c7; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28);" if is_selected else "border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(0,0,0,0.05);"
     selected_badge = '<div style="position:absolute; top:8px; right:8px; background:#0284c7; color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:12px; z-index:10; box-shadow:0 1px 4px rgba(0,0,0,0.2);">✓ Selected</div>' if is_selected else ''
 
     # 1. SIDEBAR MODERN THUMBNAIL (TOP-LEFT OF SCREENSHOT)
     if template_id == "sidebar_modern":
+        # Default dark teal/navy sidebar as shown in screenshot
+        sidebar_bg = color if color and color != "#0284C7" else "#1b4d6b"
         inner_html = f"""
-        <div style="display:flex; height:100%; width:100%;">
+        <div style="display:flex; height:100%; width:100%; font-family:'Segoe UI', Inter, sans-serif; font-size:7px; background:#ffffff;">
           <!-- Left Column (Accent Sidebar) -->
-          <div style="width:36%; background:{color}; color:#ffffff; padding:10px 8px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center;">
-            <div style="width:34px; height:34px; background:rgba(255,255,255,0.22); border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:6px; border:1px solid rgba(255,255,255,0.35);">
-              <span style="font-size:16px;">👤</span>
+          <div style="width:33%; background:{sidebar_bg}; color:#ffffff; padding:10px 8px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center;">
+            <div style="width:38px; height:38px; border-radius:50%; overflow:hidden; margin-bottom:6px; border:1.5px solid rgba(255,255,255,0.4); box-shadow:0 2px 4px rgba(0,0,0,0.15);">
+              {WOMAN_AVATAR_CIRCLE_SVG}
             </div>
-            <div style="font-size:11px; font-weight:800; text-align:center; line-height:1.15; color:#ffffff;">{name}</div>
-            <div style="font-size:7.5px; opacity:0.85; text-align:center; margin-bottom:8px;">Profession</div>
+            <div style="font-size:10.5px; font-weight:800; text-align:center; line-height:1.15; color:#ffffff; margin-bottom:2px;">{name}</div>
+            <div style="font-size:7px; opacity:0.85; text-align:center; margin-bottom:8px;">Profession</div>
 
-            <div style="width:100%; font-size:7.5px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.35); padding-bottom:1px; margin-bottom:3px; text-transform:uppercase;">Contact</div>
-            <div style="width:100%; font-size:6.5px; opacity:0.9; margin-bottom:6px; line-height:1.2;">
-              <div>• New Delhi, India</div>
-              <div>• +91 97170 54977</div>
-              <div>• sample@mail.in</div>
+            <div style="width:100%; font-size:7.5px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.3); padding-bottom:1px; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.03em;">Contact</div>
+            <div style="width:100%; font-size:6px; opacity:0.92; margin-bottom:8px; line-height:1.25;">
+              <div style="font-weight:600;">Address</div>
+              <div style="opacity:0.85; margin-bottom:2px;">New Delhi, India, 110014</div>
+              <div style="font-weight:600;">Phone</div>
+              <div style="opacity:0.85; margin-bottom:2px;">+91 97170 54977</div>
+              <div style="font-weight:600;">Email</div>
+              <div style="opacity:0.85;">saanvipatel@sample.in</div>
             </div>
 
-            <div style="width:100%; font-size:7.5px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.35); padding-bottom:1px; margin-bottom:3px; text-transform:uppercase;">Skills</div>
-            <div style="width:100%; font-size:6.5px; opacity:0.9; line-height:1.25;">
-              <div>• Stock management</div>
+            <div style="width:100%; font-size:7.5px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.3); padding-bottom:1px; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.03em;">Skills</div>
+            <div style="width:100%; font-size:6px; opacity:0.92; line-height:1.3;">
+              <div>• Stock opening and closing</div>
               <div>• Sales expertise</div>
               <div>• Accurate Money Handling</div>
-              <div>• Merchandising</div>
+              <div>• Store Merchandising</div>
+              <div>• Loss prevention</div>
+              <div>• Product promotions</div>
             </div>
           </div>
           <!-- Right Column (White Body) -->
-          <div style="width:64%; background:#ffffff; padding:12px 10px; box-sizing:border-box;">
-            <div style="font-size:9px; font-weight:800; color:{color}; border-bottom:1px solid {color}30; padding-bottom:2px; margin-bottom:3px;">Education</div>
-            <div style="font-size:7.5px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting</div>
-            <div style="font-size:6.5px; color:#64748b; margin-bottom:6px;">Oxford Software Institute, New Delhi (June 2016)</div>
+          <div style="width:67%; background:#ffffff; padding:10px 10px; box-sizing:border-box; overflow:hidden;">
+            <div style="font-size:8.5px; font-weight:800; color:{sidebar_bg}; text-transform:capitalize; margin-bottom:2px;">Education</div>
+            <div style="font-size:6px; color:#64748b; margin-bottom:1px;">June 2016 <strong style="color:#0f172a; margin-left:3px; font-size:6.8px;">Diploma: Financial Accounting</strong></div>
+            <div style="font-size:5.8px; color:#475569; margin-bottom:5px;">Oxford Business Institute & Oxford School of English, New Delhi, India</div>
 
-            <div style="font-size:9px; font-weight:800; color:{color}; border-bottom:1px solid {color}30; padding-bottom:2px; margin-bottom:3px;">Work History</div>
-            <div style="font-size:7.5px; font-weight:700; color:#1e293b;">Retail Sales Associate</div>
-            <div style="font-size:6.5px; color:#64748b; margin-bottom:2px;">ABC Store, New Delhi | 2016 - Current</div>
-            <div style="font-size:6.5px; color:#475569; line-height:1.25; margin-bottom:5px;">
-              <div>• Upsold accessories adding ₹8,000 monthly.</div>
-              <div>• Maintained 95%+ positive customer ratings.</div>
+            <div style="font-size:5.8px; color:#475569; line-height:1.25; margin-bottom:6px; text-align:justify; border-left:2px solid {sidebar_bg}30; padding-left:4px;">
+              Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service. Resourceful expert at training customer needs, directing to desirable merchandise and upselling to meet sales quotas.
             </div>
 
-            <div style="font-size:7.5px; font-weight:700; color:#1e293b;">Cashier</div>
-            <div style="font-size:6.5px; color:#64748b; margin-bottom:2px;">Starbucks | 2015 - 2016</div>
-            <div style="font-size:6.5px; color:#475569; line-height:1.25;">
-              <div>• Handled peak transactions with zero error.</div>
+            <div style="font-size:8.5px; font-weight:800; color:{sidebar_bg}; text-transform:capitalize; margin-bottom:2px;">Work History</div>
+            <div style="font-size:6px; color:#64748b;">2016-07 - Current <strong style="color:#0f172a; margin-left:3px; font-size:6.8px;">Retail Sales Associate</strong></div>
+            <div style="font-size:5.8px; color:#64748b; margin-bottom:2px;">ABC Store, New Delhi</div>
+            <div style="font-size:5.8px; color:#334155; line-height:1.25; margin-bottom:5px; padding-left:2px;">
+              <div>• Effectively upsold products by introducing accessories and other add-ons, adding ₹8000 to average monthly sales.</div>
+              <div>• Maintained top positive customer reviews.</div>
+              <div>• Used consultant sales approach to understand customer needs.</div>
+            </div>
+
+            <div style="font-size:6px; color:#64748b;">2015-01 - 2016-06 <strong style="color:#0f172a; margin-left:3px; font-size:6.8px;">Barista</strong></div>
+            <div style="font-size:5.8px; color:#64748b; margin-bottom:2px;">Starbucks - New Delhi</div>
+            <div style="font-size:5.8px; color:#334155; line-height:1.25; padding-left:2px;">
+              <div>• Created over 60 drinks per hour with consistently positive satisfaction.</div>
+              <div>• Greeted customers, took orders and prepared drinks.</div>
             </div>
           </div>
         </div>
@@ -911,67 +956,85 @@ def render_template_thumbnail(template_id: str, accent_hex: str = "", is_selecte
     # 2. CLASSIC SERIF THUMBNAIL (TOP-RIGHT OF SCREENSHOT)
     elif template_id in ("classic_serif", "classic_ats"):
         inner_html = f"""
-        <div style="height:100%; width:100%; background:#ffffff; padding:12px 14px; box-sizing:border-box; font-family:'Times New Roman', Georgia, serif; text-align:center;">
-          <div style="font-size:12px; font-weight:800; letter-spacing:0.04em; color:#0f172a; text-transform:uppercase;">{name}</div>
-          <div style="font-size:7px; color:#64748b; font-style:italic; margin-top:1px;">PROFESSION</div>
-          <div style="font-size:6.5px; color:#64748b; margin-top:2px;">New Delhi, India 110014 | +91 97170 54977 | saanvipatel@sample.in</div>
-          <hr style="border:none; border-top:1px solid #0f172a; margin:4px 0 6px 0;" />
+        <div style="height:100%; width:100%; background:#ffffff; padding:12px 14px; box-sizing:border-box; font-family:'Times New Roman', Georgia, serif; text-align:center; overflow:hidden;">
+          <div style="font-size:13px; font-weight:800; letter-spacing:0.06em; color:#0f172a; text-transform:uppercase;">SAANVI PATEL</div>
+          <div style="font-size:7px; color:#475569; font-style:italic; letter-spacing:0.04em; margin-top:1px;">PROFESSION</div>
+          <div style="font-size:6px; color:#64748b; margin-top:2px;">New Delhi, India 110014 | +91 97170 54977 | saanvipatel@sample.in</div>
+          <div style="border-top:1.5px solid #0f172a; border-bottom:0.5px solid #0f172a; height:2px; margin:4px 0 6px 0;"></div>
 
-          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">EDUCATION</div>
-          <div style="font-size:7px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting, June 2016</div>
-          <div style="font-size:6.5px; color:#64748b; margin-bottom:5px;">Oxford Software Institute & Oxford School of English, New Delhi</div>
+          <div style="font-size:7.5px; font-weight:800; color:#0f172a; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:2px;">EDUCATION</div>
+          <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting, June 2016</div>
+          <div style="font-size:5.8px; color:#64748b; margin-bottom:5px;">Oxford Business Institute & Oxford School of English, New Delhi, India</div>
 
-          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">PROFESSIONAL SUMMARY</div>
-          <div style="font-size:6.5px; color:#475569; text-align:justify; line-height:1.2; margin-bottom:5px;">
-            Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service.
+          <div style="font-size:7.5px; font-weight:800; color:#0f172a; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:2px;">PROFESSIONAL SUMMARY</div>
+          <div style="font-size:5.8px; color:#475569; text-align:justify; line-height:1.25; margin-bottom:5px; padding:0 4px;">
+            Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty through individualized service. Resourceful expert at training customer needs, directing to desirable merchandise and upselling to meet sales quotas.
           </div>
 
-          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">SKILLS</div>
-          <div style="display:flex; justify-content:space-between; font-size:6.5px; color:#334155; text-align:left; margin-bottom:5px; padding:0 8px;">
-            <div>• Stock opening and closing<br>• Accurate Money Handling</div>
-            <div>• Sales expertise<br>• Store Merchandising</div>
+          <div style="font-size:7.5px; font-weight:800; color:#0f172a; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:2px;">SKILLS</div>
+          <div style="display:flex; justify-content:space-between; font-size:5.8px; color:#334155; text-align:left; margin-bottom:5px; padding:0 12px; line-height:1.3;">
+            <div>• Stock opening and closing<br>• Accurate Money Handling<br>• Loss prevention</div>
+            <div>• Sales expertise<br>• Store Merchandising<br>• Product promotions</div>
           </div>
 
-          <div style="font-size:7.5px; font-weight:800; color:{color}; text-transform:uppercase; margin-bottom:2px;">WORK HISTORY</div>
-          <div style="font-size:7px; font-weight:700; color:#1e293b; text-align:left;">Retail Sales Associate (07/2016 - Current)</div>
-          <div style="font-size:6.5px; color:#475569; text-align:left; line-height:1.2;">
-            <div>• Effectively upsold products, adding ₹8,000 to monthly sales.</div>
+          <div style="font-size:7.5px; font-weight:800; color:#0f172a; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:2px;">WORK HISTORY</div>
+          <div style="font-size:6.8px; font-weight:700; color:#1e293b; text-align:left;">Retail Sales Associate (07/2016 - Current)</div>
+          <div style="font-size:5.8px; color:#64748b; text-align:left;">ABC Store - New Delhi</div>
+          <div style="font-size:5.8px; color:#475569; text-align:left; line-height:1.25; margin-bottom:3px; padding-left:2px;">
+            <div>• Effectively upsold products by introducing accessories, adding ₹8000 to average monthly sales.</div>
             <div>• Maintained top positive customer reviews.</div>
+          </div>
+
+          <div style="font-size:6.8px; font-weight:700; color:#1e293b; text-align:left;">Barista (01/2015 - 06/2016)</div>
+          <div style="font-size:5.8px; color:#64748b; text-align:left;">Starbucks - New Delhi</div>
+          <div style="font-size:5.8px; color:#475569; text-align:left; line-height:1.25; padding-left:2px;">
+            <div>• Created over 60 drinks per hour with consistently positive satisfaction scores.</div>
           </div>
         </div>
         """
 
     # 3. TOP BANNER THUMBNAIL (BOTTOM-LEFT OF SCREENSHOT)
     elif template_id == "top_banner":
+        banner_green = color if color and color != "#0284C7" else "#65a30d"
         inner_html = f"""
-        <div style="height:100%; width:100%; background:#ffffff; box-sizing:border-box; display:flex; flex-direction:column;">
+        <div style="height:100%; width:100%; background:#ffffff; box-sizing:border-box; display:flex; flex-direction:column; font-family:'Segoe UI', Inter, sans-serif; overflow:hidden;">
           <!-- Top Accent Banner -->
-          <div style="background:{color}; color:#ffffff; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="background:{banner_green}; color:#ffffff; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <div style="font-size:12px; font-weight:800; color:#ffffff;">{name}</div>
-              <div style="font-size:7.5px; color:rgba(255,255,255,0.9); margin-top:1px;">Profession</div>
+              <div style="font-size:13px; font-weight:800; color:#ffffff; line-height:1.1;">{name}</div>
+              <div style="font-size:7px; color:rgba(255,255,255,0.9); margin-top:2px; margin-bottom:5px;">Profession</div>
+              <div style="font-size:5.8px; color:rgba(255,255,255,0.95); line-height:1.35;">
+                <div>📍 New Delhi, India 110014</div>
+                <div>📞 +91 97170 54977</div>
+                <div>✉️ saanvipatel@sample.in</div>
+              </div>
             </div>
-            <div style="width:28px; height:28px; background:rgba(255,255,255,0.25); border-radius:4px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.4);">
-              <span style="font-size:14px;">👤</span>
+            <div style="width:40px; height:46px; border-radius:3px; overflow:hidden; border:1.5px solid rgba(255,255,255,0.6); box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+              {WOMAN_AVATAR_SVG}
             </div>
           </div>
           <!-- Body Content -->
-          <div style="padding:10px 12px; flex:1;">
-            <div style="display:flex; justify-content:space-between; font-size:6.5px; color:#64748b; margin-bottom:6px; border-bottom:1px solid #f1f5f9; padding-bottom:4px;">
-              <span>📍 New Delhi, India</span>
-              <span>📞 +91 97170 54977</span>
-              <span>✉️ sample@mail.in</span>
+          <div style="padding:8px 12px; flex:1; background:#ffffff;">
+            <div style="display:flex; align-items:center; gap:4px; font-size:7.5px; font-weight:800; color:{banner_green}; text-transform:uppercase; margin-bottom:2px;">
+              <span style="font-size:9px; color:{banner_green};">●</span> Education
+            </div>
+            <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting</div>
+            <div style="font-size:5.8px; color:#64748b; margin-bottom:5px;">Oxford Business Institute & Oxford School of English, New Delhi, India (June 2016)</div>
+
+            <div style="display:flex; align-items:center; gap:4px; font-size:7.5px; font-weight:800; color:{banner_green}; text-transform:uppercase; margin-bottom:2px;">
+              <span style="font-size:9px; color:{banner_green};">●</span> Work History
+            </div>
+            <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Retail Sales Associate (07/2016 - Current)</div>
+            <div style="font-size:5.8px; color:#64748b;">ABC Store, New Delhi</div>
+            <div style="font-size:5.8px; color:#475569; line-height:1.25; margin-bottom:4px; padding-left:2px;">
+              <div>• Boosted monthly sales volume by ₹8,000 via add-ons.</div>
+              <div>• Controlled inventory and customer relations.</div>
             </div>
 
-            <div style="display:inline-block; background:{color}18; color:{color}; font-size:7.5px; font-weight:800; padding:1px 6px; border-radius:3px; margin-bottom:3px;">EDUCATION</div>
-            <div style="font-size:7px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting</div>
-            <div style="font-size:6.5px; color:#64748b; margin-bottom:6px;">Oxford Software Institute (June 2016)</div>
-
-            <div style="display:inline-block; background:{color}18; color:{color}; font-size:7.5px; font-weight:800; padding:1px 6px; border-radius:3px; margin-bottom:3px;">WORK HISTORY</div>
-            <div style="font-size:7px; font-weight:700; color:#1e293b;">Retail Sales Associate</div>
-            <div style="font-size:6.5px; color:#475569; line-height:1.25;">
-              <div>• Boosted monthly sales volume by ₹8,000 via add-ons.</div>
-              <div>• Managed high-traffic cash counter with zero errors.</div>
+            <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Barista (01/2015 - 06/2016)</div>
+            <div style="font-size:5.8px; color:#64748b;">Starbucks - New Delhi</div>
+            <div style="font-size:5.8px; color:#475569; line-height:1.25; padding-left:2px;">
+              <div>• Handled high-traffic drink counter with zero errors.</div>
             </div>
           </div>
         </div>
@@ -979,30 +1042,46 @@ def render_template_thumbnail(template_id: str, accent_hex: str = "", is_selecte
 
     # 4. EXECUTIVE HEADER THUMBNAIL (BOTTOM-RIGHT OF SCREENSHOT)
     elif template_id in ("executive_header", "executive_suite"):
+        header_dark = "#262b30"
         inner_html = f"""
-        <div style="height:100%; width:100%; background:#ffffff; box-sizing:border-box; display:flex; flex-direction:column;">
+        <div style="height:100%; width:100%; background:#ffffff; box-sizing:border-box; display:flex; flex-direction:column; font-family:'Segoe UI', Inter, sans-serif; overflow:hidden;">
           <!-- Dark Executive Header -->
-          <div style="background:#1e293b; color:#ffffff; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="background:{header_dark}; color:#ffffff; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <div style="font-size:12px; font-weight:800; color:#ffffff;">{name}</div>
-              <div style="font-size:7px; color:rgba(255,255,255,0.75);">Profession</div>
-              <div style="font-size:6px; color:rgba(255,255,255,0.65); margin-top:2px;">New Delhi | +91 97170 54977 | sample@mail.in</div>
+              <div style="font-size:13px; font-weight:800; color:#ffffff; line-height:1.1;">{name}</div>
+              <div style="font-size:7px; color:rgba(255,255,255,0.7); margin-top:2px; margin-bottom:5px;">Profession</div>
+              <div style="font-size:5.8px; color:rgba(255,255,255,0.85); line-height:1.35;">
+                <div>Address: New Delhi, India 110014</div>
+                <div>Phone: +91 97170 54977</div>
+                <div>Email: saanvipatel@sample.in</div>
+              </div>
             </div>
-            <div style="width:28px; height:28px; background:#334155; border-radius:4px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.25);">
-              <span style="font-size:14px;">👤</span>
+            <div style="width:40px; height:46px; border-radius:3px; overflow:hidden; border:1px solid rgba(255,255,255,0.3); box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+              {WOMAN_AVATAR_SVG}
             </div>
           </div>
           <!-- Body Content -->
-          <div style="padding:10px 12px; flex:1;">
-            <div style="font-size:8px; font-weight:800; color:{color}; border-bottom:1.5px solid {color}; padding-bottom:1px; margin-bottom:4px; text-transform:uppercase;">◆ Education</div>
-            <div style="font-size:7px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting</div>
-            <div style="font-size:6.5px; color:#64748b; margin-bottom:6px;">Oxford Software Institute, New Delhi (June 2016)</div>
+          <div style="padding:8px 12px; flex:1; background:#ffffff;">
+            <div style="display:flex; align-items:center; gap:4px; font-size:7.5px; font-weight:800; color:#1e293b; text-transform:uppercase; margin-bottom:2px;">
+              <span style="font-size:8px; color:{color};">◆</span> Education
+            </div>
+            <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Diploma: Financial Accounting, June 2016</div>
+            <div style="font-size:5.8px; color:#64748b; margin-bottom:5px;">Oxford Business Institute & Oxford School of English, New Delhi, India</div>
 
-            <div style="font-size:8px; font-weight:800; color:{color}; border-bottom:1.5px solid {color}; padding-bottom:1px; margin-bottom:4px; text-transform:uppercase;">◆ Work History</div>
-            <div style="font-size:7px; font-weight:700; color:#1e293b;">Retail Sales Associate (07/2016 - Current)</div>
-            <div style="font-size:6.5px; color:#475569; line-height:1.25;">
+            <div style="display:flex; align-items:center; gap:4px; font-size:7.5px; font-weight:800; color:#1e293b; text-transform:uppercase; margin-bottom:2px;">
+              <span style="font-size:8px; color:{color};">◆</span> Work History
+            </div>
+            <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Retail Sales Associate (07/2016 - Current)</div>
+            <div style="font-size:5.8px; color:#64748b;">ABC Store, New Delhi</div>
+            <div style="font-size:5.8px; color:#475569; line-height:1.25; margin-bottom:4px; padding-left:2px;">
               <div>• Controlled merchandising and boosted add-on revenue by ₹8,000/mo.</div>
               <div>• Promoted high customer satisfaction and store loyalty.</div>
+            </div>
+
+            <div style="font-size:6.8px; font-weight:700; color:#1e293b;">Barista (01/2015 - 06/2016)</div>
+            <div style="font-size:5.8px; color:#64748b;">Starbucks - New Delhi</div>
+            <div style="font-size:5.8px; color:#475569; line-height:1.25; padding-left:2px;">
+              <div>• Created over 60 drinks per hour with zero transaction errors.</div>
             </div>
           </div>
         </div>
@@ -1031,7 +1110,7 @@ def render_template_thumbnail(template_id: str, accent_hex: str = "", is_selecte
         """
 
     return f"""
-    <div style="position:relative; width:100%; height:255px; border-radius:8px; overflow:hidden; {selected_border} transition:all 0.2s ease-in-out; margin-bottom:6px;">
+    <div style="position:relative; width:100%; height:320px; border-radius:6px; overflow:hidden; {selected_border} transition:all 0.2s ease-in-out; margin-bottom:6px; background:#ffffff;">
       {selected_badge}
       {inner_html}
     </div>
