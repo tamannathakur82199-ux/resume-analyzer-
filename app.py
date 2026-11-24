@@ -1505,25 +1505,59 @@ elif active_tab == "Build Resume":
                     st.session_state["studio_nav_tab"] = "Add section"
                     st.rerun()
 
-            # Active swatch highlight styling
-            active_sw_id = "blue"
-            for sw in COLOR_PALETTE:
-                if sw["hex"].lower() == current_color_hex.lower():
-                    active_sw_id = sw["id"]
-                    break
-            st.markdown(f"""
-            <style>
-              button[key="sw_{active_sw_id}"] {{
-                  box-shadow: 0 0 0 2.5px #ffffff, 0 0 0 5px #0284c7 !important;
-                  transform: scale(1.15) !important;
-              }}
-            </style>
-            """, unsafe_allow_html=True)
+            # Color Palette Swatches: fill each native Streamlit button with its
+            # matching palette color. The nth-child selectors are used because
+            # Streamlit does not expose widget keys as HTML attributes.
+            active_sw_index = next(
+                (i for i, sw in enumerate(COLOR_PALETTE, start=1)
+                 if sw["hex"].lower() == current_color_hex.lower()),
+                1,
+            )
+            palette_column_count = len(COLOR_PALETTE) + 1  # includes the trailing spacer
+            swatch_css = ["<style>"]
+            row_selector = (
+                'div[data-testid="stHorizontalBlock"]'
+                f':has(> div[data-testid="column"]:nth-child({palette_column_count}))'
+            )
+            for index, swatch in enumerate(COLOR_PALETTE, start=1):
+                color = swatch["hex"]
+                button_selector = (
+                    f'{row_selector} > div[data-testid="column"]:nth-child({index}) '
+                    'div[data-testid="stButton"] button'
+                )
+                swatch_css.append(f"""
+                {button_selector} {{
+                    background: {color} !important;
+                    background-color: {color} !important;
+                    border: 2px solid {color} !important;
+                    border-radius: 9px !important;
+                    min-height: 38px !important;
+                    height: 38px !important;
+                    width: 100% !important;
+                    padding: 0 !important;
+                    color: transparent !important;
+                    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16) !important;
+                    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+                }}
+                {button_selector}:hover {{
+                    filter: brightness(1.08) !important;
+                    transform: translateY(-1px) !important;
+                }}
+                """)
+                if index == active_sw_index:
+                    swatch_css.append(f"""
+                    {button_selector} {{
+                        outline: 3px solid #ffffff !important;
+                        box-shadow: 0 0 0 5px #2563eb, 0 3px 8px rgba(15, 23, 42, 0.22) !important;
+                        transform: scale(1.08) !important;
+                    }}
+                    """)
+            swatch_css.append("</style>")
+            st.markdown("\n".join(swatch_css), unsafe_allow_html=True)
 
-            # Color Palette Swatches (Horizontal Strip matching screenshot)
+            # Color Palette Swatches (Horizontal Strip)
             swatch_cols = st.columns([1] * len(COLOR_PALETTE) + [3])
-            for i in range(len(COLOR_PALETTE)):
-                sw_item = COLOR_PALETTE[i]
+            for i, sw_item in enumerate(COLOR_PALETTE):
                 with swatch_cols[i]:
                     if st.button(" ", key=f"sw_{sw_item['id']}", help=sw_item["title"]):
                         st.session_state["builder_color_hex"] = sw_item["hex"]
