@@ -14,14 +14,6 @@ from matcher import parse_job_description
 from report_generator import build_report_pdf
 from resume_builder import (build_resume_docx, build_resume_pdf, build_tailored_profile,
                             is_ph, profile_from_fields)
-import resume_builder
-import inspect
-
-st.write("DEBUG - Loaded resume_builder file:",
-         resume_builder.__file__)
-
-st.write("DEBUG - PDF function:",
-         inspect.signature(resume_builder.build_resume_pdf))
 from resume_parser import extract_text, parse_resume
 try:
     from resume_templates import (COLOR_PALETTE, DUMMY_PROFILES, RESUME_TEMPLATES,
