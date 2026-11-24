@@ -786,53 +786,18 @@ st.markdown(
           font-weight: 700 !important;
       }
 
-      /* Swatch Circular Buttons */
-      div[data-testid="column"]:has(button[key^="sw_"]) {
+      /* Native Streamlit color-picker swatches are used for the palette. */
+      div[data-testid="stColorPicker"] {
           padding: 0 !important;
-          min-width: 32px !important;
-          max-width: 38px !important;
+          margin: 0 auto !important;
       }
-      div[data-testid="column"]:has(button[key^="sw_"]) button {
-          width: 30px !important;
-          height: 34px !important;
+      div[data-testid="stColorPicker"] button {
+          min-width: 34px !important;
           min-height: 34px !important;
-          max-height: 34px !important;
-          border-radius: 50% !important;
+          width: 34px !important;
+          height: 34px !important;
+          border-radius: 8px !important;
           padding: 0 !important;
-          margin: 3px auto !important;
-          border: none !important;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
-          cursor: pointer !important;
-          display: block !important;
-          transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-      }
-      div[data-testid="column"]:has(button[key^="sw_"]) button p {
-          display: block !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-          font-size: 19px !important;
-          line-height: 1 !important;
-          margin: 0 !important;
-          padding: 0 !important;
-      }
-      div[data-testid="column"]:has(button[key^="sw_"]) button:hover {
-          transform: scale(1.15) !important;
-      }
-      button[key="sw_rainbow"] {
-          background: conic-gradient(#ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0000ff, #8000ff, #ff0080, #ff0000) !important;
-      }
-      button[key="sw_charcoal"] { background: #64748B !important; }
-      button[key="sw_navy"] { background: #1E3A8A !important; }
-      button[key="sw_purple"] { background: #7C3AED !important; }
-      button[key="sw_blue"] { background: #0284C7 !important; }
-      button[key="sw_teal"] { background: #0D9488 !important; }
-      button[key="sw_green"] { background: #15803D !important; }
-      button[key="sw_rust"] { background: #991B1B !important; }
-      button[key="sw_coral"] { background: #FB923C !important; }
-      button[key="sw_yellow"] { background: #F59E0B !important; }
-      button[key="sw_monochrome"] {
-          background: linear-gradient(135deg, #ffffff 44%, #94a3b8 48%, #94a3b8 52%, #ffffff 56%) !important;
-          border: 1.5px solid #94a3b8 !important;
       }
 
       /* Studio Close Button (✕) */
@@ -1511,22 +1476,24 @@ elif active_tab == "Build Resume":
                     st.session_state["studio_nav_tab"] = "Add section"
                     st.rerun()
 
-            # Color Palette Swatches. Use visible colored-square emoji labels so
-            # the colors remain visible even if Streamlit changes its DOM/CSS
-            # structure (CSS selectors based on widget keys are not reliable).
-            swatch_glyphs = {
-                "rainbow": "🌈", "charcoal": "⬛", "navy": "🟦",
-                "purple": "🟪", "blue": "🔵", "teal": "🟩",
-                "green": "🟢", "rust": "🟥", "coral": "🟧",
-                "yellow": "🟨", "monochrome": "⬜",
-            }
-            swatch_cols = st.columns([1] * len(COLOR_PALETTE) + [3])
+            # Color Palette Swatches: use native color-picker controls so each
+            # swatch is rendered as a genuinely filled color chip, not a glyph.
+            def _apply_palette_color(widget_key):
+                st.session_state["builder_color_hex"] = st.session_state[widget_key]
+
+            swatch_cols = st.columns(len(COLOR_PALETTE) + 1, gap="small")
             for i, sw_item in enumerate(COLOR_PALETTE):
                 with swatch_cols[i]:
-                    glyph = swatch_glyphs.get(sw_item["id"], "🟦")
-                    if st.button(glyph, key=f"sw_{sw_item['id']}", help=f"{sw_item['title']} — {sw_item['hex']}"):
-                        st.session_state["builder_color_hex"] = sw_item["hex"]
-                        st.rerun()
+                    picker_key = f"palette_picker_{sw_item['id']}"
+                    st.color_picker(
+                        label=sw_item["title"],
+                        value=sw_item["hex"],
+                        key=picker_key,
+                        label_visibility="collapsed",
+                        help=f"{sw_item['title']} — {sw_item['hex']}",
+                        on_change=_apply_palette_color,
+                        args=(picker_key,),
+                    )
 
             # All Templates Section Heading
             st.markdown('<div class="studio-subheading">All templates</div>', unsafe_allow_html=True)
