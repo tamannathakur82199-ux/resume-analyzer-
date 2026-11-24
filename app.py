@@ -264,15 +264,16 @@ SAMPLE_JD = os.path.join(HERE, "sample_data", "job_description.txt")
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
-def get_template_preview(template_id: str, accent_hex: str = "#0284C7") -> str | bytes:
-    """Returns an image path or in-memory PNG bytes for Streamlit st.image (no HTML code)."""
+def get_template_preview(template_id: str, accent_hex: str = "#0284C7") -> bytes:
+    """Returns in-memory PNG bytes for Streamlit st.image (100% reliable, no disk dependencies, no HTML code)."""
+    import io
     try:
         from PIL import Image, ImageDraw, ImageFont
         accent_rgb = hex_to_rgb(accent_hex)
         W, H = 480, 660
 
         def get_f(name='arial.ttf', size=12):
-            for candidate in [name, 'Arial.ttf', 'calibri.ttf', 'DejaVuSans.ttf', 'times.ttf']:
+            for candidate in [name, 'Arial.ttf', 'calibri.ttf', 'DejaVuSans.ttf', 'times.ttf', 'Times.ttf']:
                 try:
                     return ImageFont.truetype(candidate, size)
                 except Exception:
@@ -294,10 +295,13 @@ def get_template_preview(template_id: str, accent_hex: str = "#0284C7") -> str |
         f_bold = get_f('arialbd.ttf', 10)
         f_head = get_f('arialbd.ttf', 12)
         f_gray = get_f('arial.ttf', 9)
+        f_serif_title = get_f('timesbd.ttf', 18)
+        f_serif_sub = get_f('times.ttf', 10)
+
+        img = Image.new('RGB', (W, H), (255, 255, 255))
+        d = ImageDraw.Draw(img)
 
         if template_id == 'sidebar_modern':
-            img = Image.new('RGB', (W, H), (255, 255, 255))
-            d = ImageDraw.Draw(img)
             side_w = 160
             d.rectangle([0, 0, side_w, H], fill=accent_rgb)
             draw_avatar(d, 45, 25, 70, 70, is_circle=True)
@@ -327,16 +331,60 @@ def get_template_preview(template_id: str, accent_hex: str = "#0284C7") -> str |
             d.text((rx, 353), 'Starbucks - New Delhi', fill=(100, 116, 139), font=f_gray)
             w2 = ['• Created over 60 drinks per hour with top satisfaction scores.', '• Handled peak transactions with zero error.']
             d.text((rx + 5, 372), '\n'.join(w2), fill=(51, 65, 85), font=f_body, spacing=5)
-            buf = io.BytesIO()
-            img.save(buf, format='PNG')
-            return buf.getvalue()
+
         elif template_id in ('classic_serif', 'classic_ats'):
-            static_p = os.path.join(HERE, 'assets', 'templates', 'classic_serif.png')
-            if os.path.isfile(static_p):
-                return static_p
+            d.text((W // 2, 36), 'SAANVI PATEL', fill=(17, 24, 39), font=f_serif_title, anchor='mm')
+            d.text((W // 2, 54), 'PROFESSION', fill=(75, 85, 99), font=f_serif_sub, anchor='mm')
+            d.line([30, 68, W - 30, 68], fill=(156, 163, 175), width=1)
+            d.text((W // 2, 79), 'New Delhi, India 110014 | +91 97170 54977 | saanvipatel@sample.in', fill=(107, 114, 128), font=f_gray, anchor='mm')
+            d.line([30, 90, W - 30, 90], fill=(209, 213, 219), width=1)
+
+            # Education
+            d.text((W // 2, 108), 'EDUCATION', fill=(17, 24, 39), font=f_bold, anchor='mm')
+            d.line([30, 117, W - 30, 117], fill=(229, 231, 235), width=1)
+            d.text((32, 126), 'Diploma: Financial Accounting, June 2016', fill=(17, 24, 39), font=f_bold)
+            d.text((32, 140), 'Oxford Business Institute & Oxford School of English — New Delhi, India', fill=(75, 85, 99), font=f_body)
+
+            # Professional Summary
+            d.text((W // 2, 168), 'PROFESSIONAL SUMMARY', fill=(17, 24, 39), font=f_bold, anchor='mm')
+            d.line([30, 177, W - 30, 177], fill=(229, 231, 235), width=1)
+            sum_lines = [
+                'Motivated Sales Associate with 5 years of experience boosting sales and customer loyalty through',
+                'individualized service. Resourceful expert at training customer needs, directing to desirable merchandise',
+                'and upselling to meet sales quotas. Committed to strengthening customer experience with positivity and',
+                'professionalism when answering inquiries and processing sales.'
+            ]
+            d.text((32, 185), '\n'.join(sum_lines), fill=(55, 65, 81), font=f_body, spacing=3)
+
+            # Skills (2 columns)
+            d.text((W // 2, 255), 'SKILLS', fill=(17, 24, 39), font=f_bold, anchor='mm')
+            d.line([30, 264, W - 30, 264], fill=(229, 231, 235), width=1)
+            sk_col1 = ['• Stock opening and closing', '• Accurate Money Handling', '• Loss prevention']
+            sk_col2 = ['• Sales expertise', '• Store Merchandising', '• Product promotions']
+            d.text((45, 272), '\n'.join(sk_col1), fill=(55, 65, 81), font=f_body, spacing=4)
+            d.text((260, 272), '\n'.join(sk_col2), fill=(55, 65, 81), font=f_body, spacing=4)
+
+            # Work History
+            d.text((W // 2, 340), 'WORK HISTORY', fill=(17, 24, 39), font=f_bold, anchor='mm')
+            d.line([30, 349, W - 30, 349], fill=(229, 231, 235), width=1)
+            d.text((32, 358), 'Retail Sales Associate (07/2016 - Current)', fill=(17, 24, 39), font=f_bold)
+            d.text((32, 372), 'ABC Store — New Delhi', fill=(75, 85, 99), font=f_body)
+            wh1 = [
+                '• Effectively upsold products by introducing accessories and other add-ons, adding ₹8000 to average',
+                '  monthly sales.',
+                '• Operated point-of-sale systems with 100% accuracy and handled customer requests with speed.'
+            ]
+            d.text((35, 388), '\n'.join(wh1), fill=(55, 65, 81), font=f_body, spacing=3)
+
+            d.text((32, 432), 'Barista (01/2015 - 06/2016)', fill=(17, 24, 39), font=f_bold)
+            d.text((32, 446), 'Starbucks — New Delhi', fill=(75, 85, 99), font=f_body)
+            wh2 = [
+                '• Created over 60 drinks per hour with consistently positive customer satisfaction scores.',
+                '• Upheld baked goods and menu alerts with beverages, increasing store sales by ₹5000 per month.'
+            ]
+            d.text((35, 462), '\n'.join(wh2), fill=(55, 65, 81), font=f_body, spacing=3)
+
         elif template_id == 'top_banner':
-            img = Image.new('RGB', (W, H), (255, 255, 255))
-            d = ImageDraw.Draw(img)
             b_h = 135
             d.rectangle([0, 0, W, b_h], fill=accent_rgb)
             draw_avatar(d, 375, 18, 80, 98, is_circle=False)
@@ -352,12 +400,8 @@ def get_template_preview(template_id: str, accent_hex: str = "#0284C7") -> str |
             d.text((25, 340), 'Retail Sales Associate (07/2016 - Current)', fill=(15, 23, 42), font=f_bold)
             d.text((25, 357), 'ABC Store, New Delhi', fill=(100, 116, 139), font=f_gray)
             d.text((30, 375), '• Boosted monthly sales volume by ₹8,000 via accessories.\n• Maintained 95%+ positive customer loyalty.', fill=(51, 65, 85), font=f_body, spacing=5)
-            buf = io.BytesIO()
-            img.save(buf, format='PNG')
-            return buf.getvalue()
+
         elif template_id in ('executive_header', 'executive_suite'):
-            img = Image.new('RGB', (W, H), (255, 255, 255))
-            d = ImageDraw.Draw(img)
             b_h = 135
             d.rectangle([0, 0, W, b_h], fill=(38, 43, 48))
             draw_avatar(d, 375, 18, 80, 98, is_circle=False)
@@ -374,16 +418,45 @@ def get_template_preview(template_id: str, accent_hex: str = "#0284C7") -> str |
             d.text((25, 340), 'Retail Sales Associate (07/2016 - Current)', fill=(15, 23, 42), font=f_bold)
             d.text((25, 357), 'ABC Store, New Delhi', fill=(100, 116, 139), font=f_gray)
             d.text((30, 375), '• Controlled merchandising and boosted store revenue by ₹8,000/mo.\n• Promoted high customer satisfaction and store loyalty.', fill=(51, 65, 85), font=f_body, spacing=5)
-            buf = io.BytesIO()
-            img.save(buf, format='PNG')
-            return buf.getvalue()
-    except Exception:
-        pass
 
-    static_path = os.path.join(HERE, 'assets', 'templates', f'{template_id}.png')
-    if os.path.isfile(static_path):
-        return static_path
-    return os.path.join(HERE, 'assets', 'templates', 'sidebar_modern.png')
+        else:
+            d.rectangle([0, 0, W, 70], fill=accent_rgb)
+            d.text((25, 20), 'Saanvi Patel', fill=(255, 255, 255), font=get_f('arialbd.ttf', 18))
+            d.text((25, 45), 'Profession • New Delhi, India • +91 97170 54977', fill=(240, 245, 255), font=f_gray)
+            d.text((25, 90), 'Summary', fill=accent_rgb, font=f_head)
+            d.line([25, 108, W - 25, 108], fill=(226, 232, 240), width=1)
+            d.text((25, 115), 'Motivated professional with proven experience delivering measurable results.', fill=(71, 85, 105), font=f_body)
+            d.text((25, 150), 'Experience', fill=accent_rgb, font=f_head)
+            d.line([25, 168, W - 25, 168], fill=(226, 232, 240), width=1)
+            d.text((25, 175), 'Retail Sales Associate (2016 - Present)', fill=(15, 23, 42), font=f_bold)
+            d.text((25, 192), '• Led customer initiatives and boosted average sales.', fill=(71, 85, 105), font=f_body)
+
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        return buf.getvalue()
+
+    except Exception:
+        fallback_img = Image.new('RGB', (480, 660), (255, 255, 255))
+        d_fb = ImageDraw.Draw(fallback_img)
+        d_fb.rectangle([0, 0, 480, 80], fill=(2, 132, 199))
+        d_fb.text((240, 40), 'Resume Template', fill=(255, 255, 255), anchor='mm')
+        buf = io.BytesIO()
+        fallback_img.save(buf, format='PNG')
+        return buf.getvalue()
+
+
+def show_template_preview(template_id: str, accent_hex: str = "#0284C7") -> None:
+    """Render a generated preview inline, without Streamlit media-file storage."""
+    preview_bytes = get_template_preview(template_id, accent_hex)
+    preview_b64 = base64.b64encode(preview_bytes).decode("ascii")
+    st.markdown(
+        f'<img src="data:image/png;base64,{preview_b64}" '
+        'style="display:block;width:100%;height:auto;border-radius:8px;" '
+        'alt="Resume template preview">',
+        unsafe_allow_html=True,
+    )
+
+
 # Look for the logo in the assets folder first, then beside app.py.
 LOGO_CANDIDATES = [
     os.path.join(HERE, "assets", "logo.png"),
@@ -1485,7 +1558,7 @@ elif active_tab == "Build Resume":
                 tpl_id_1, tpl_name_1, tpl_badge_1 = featured_tpl_list[row_idx]
                 is_sel_1 = (current_tpl_id == tpl_id_1)
                 with col_left:
-                    st.image(get_template_preview(tpl_id_1, current_color_hex), use_container_width=True)
+                    show_template_preview(tpl_id_1, current_color_hex)
                     tc1, tc2 = st.columns([2.5, 1.5])
                     with tc1:
                         st.markdown(f"**{tpl_name_1}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_1}</span>", unsafe_allow_html=True)
@@ -1500,7 +1573,7 @@ elif active_tab == "Build Resume":
                     tpl_id_2, tpl_name_2, tpl_badge_2 = featured_tpl_list[row_idx + 1]
                     is_sel_2 = (current_tpl_id == tpl_id_2)
                     with col_right:
-                        st.image(get_template_preview(tpl_id_2, current_color_hex), use_container_width=True)
+                        show_template_preview(tpl_id_2, current_color_hex)
                         tc1, tc2 = st.columns([2.5, 1.5])
                         with tc1:
                             st.markdown(f"**{tpl_name_2}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_2}</span>", unsafe_allow_html=True)
@@ -1529,7 +1602,7 @@ elif active_tab == "Build Resume":
                     tpl_id_1, tpl_name_1, tpl_badge_1 = more_tpl_list[row_idx]
                     is_sel_1 = (current_tpl_id == tpl_id_1)
                     with col_left:
-                        st.image(get_template_preview(tpl_id_1, current_color_hex), use_container_width=True)
+                        show_template_preview(tpl_id_1, current_color_hex)
                         tc1, tc2 = st.columns([2.5, 1.5])
                         with tc1:
                             st.markdown(f"**{tpl_name_1}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_1}</span>", unsafe_allow_html=True)
@@ -1542,7 +1615,7 @@ elif active_tab == "Build Resume":
                         tpl_id_2, tpl_name_2, tpl_badge_2 = more_tpl_list[row_idx + 1]
                         is_sel_2 = (current_tpl_id == tpl_id_2)
                         with col_right:
-                            st.image(get_template_preview(tpl_id_2, current_color_hex), use_container_width=True)
+                            show_template_preview(tpl_id_2, current_color_hex)
                             tc1, tc2 = st.columns([2.5, 1.5])
                             with tc1:
                                 st.markdown(f"**{tpl_name_2}**  \n<span style='font-size:0.75rem; color:#64748b;'>{tpl_badge_2}</span>", unsafe_allow_html=True)
