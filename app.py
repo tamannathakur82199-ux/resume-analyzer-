@@ -794,9 +794,9 @@ st.markdown(
       }
       div[data-testid="column"]:has(button[key^="sw_"]) button {
           width: 30px !important;
-          height: 30px !important;
-          min-height: 30px !important;
-          max-height: 30px !important;
+          height: 34px !important;
+          min-height: 34px !important;
+          max-height: 34px !important;
           border-radius: 50% !important;
           padding: 0 !important;
           margin: 3px auto !important;
@@ -807,7 +807,13 @@ st.markdown(
           transition: transform 0.15s ease, box-shadow 0.15s ease !important;
       }
       div[data-testid="column"]:has(button[key^="sw_"]) button p {
-          display: none !important;
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          font-size: 19px !important;
+          line-height: 1 !important;
+          margin: 0 !important;
+          padding: 0 !important;
       }
       div[data-testid="column"]:has(button[key^="sw_"]) button:hover {
           transform: scale(1.15) !important;
@@ -1505,61 +1511,20 @@ elif active_tab == "Build Resume":
                     st.session_state["studio_nav_tab"] = "Add section"
                     st.rerun()
 
-            # Color Palette Swatches: fill each native Streamlit button with its
-            # matching palette color. The nth-child selectors are used because
-            # Streamlit does not expose widget keys as HTML attributes.
-            active_sw_index = next(
-                (i for i, sw in enumerate(COLOR_PALETTE, start=1)
-                 if sw["hex"].lower() == current_color_hex.lower()),
-                1,
-            )
-            palette_column_count = len(COLOR_PALETTE) + 1  # includes the trailing spacer
-            swatch_css = ["<style>"]
-            row_selector = (
-                'div[data-testid="stHorizontalBlock"]'
-                f':has(> div[data-testid="column"]:nth-child({palette_column_count}))'
-            )
-            for index, swatch in enumerate(COLOR_PALETTE, start=1):
-                color = swatch["hex"]
-                button_selector = (
-                    f'{row_selector} > div[data-testid="column"]:nth-child({index}) '
-                    'div[data-testid="stButton"] button'
-                )
-                swatch_css.append(f"""
-                {button_selector} {{
-                    background: {color} !important;
-                    background-color: {color} !important;
-                    border: 2px solid {color} !important;
-                    border-radius: 9px !important;
-                    min-height: 38px !important;
-                    height: 38px !important;
-                    width: 100% !important;
-                    padding: 0 !important;
-                    color: transparent !important;
-                    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16) !important;
-                    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-                }}
-                {button_selector}:hover {{
-                    filter: brightness(1.08) !important;
-                    transform: translateY(-1px) !important;
-                }}
-                """)
-                if index == active_sw_index:
-                    swatch_css.append(f"""
-                    {button_selector} {{
-                        outline: 3px solid #ffffff !important;
-                        box-shadow: 0 0 0 5px #2563eb, 0 3px 8px rgba(15, 23, 42, 0.22) !important;
-                        transform: scale(1.08) !important;
-                    }}
-                    """)
-            swatch_css.append("</style>")
-            st.markdown("\n".join(swatch_css), unsafe_allow_html=True)
-
-            # Color Palette Swatches (Horizontal Strip)
+            # Color Palette Swatches. Use visible colored-square emoji labels so
+            # the colors remain visible even if Streamlit changes its DOM/CSS
+            # structure (CSS selectors based on widget keys are not reliable).
+            swatch_glyphs = {
+                "rainbow": "🌈", "charcoal": "⬛", "navy": "🟦",
+                "purple": "🟪", "blue": "🔵", "teal": "🟩",
+                "green": "🟢", "rust": "🟥", "coral": "🟧",
+                "yellow": "🟨", "monochrome": "⬜",
+            }
             swatch_cols = st.columns([1] * len(COLOR_PALETTE) + [3])
             for i, sw_item in enumerate(COLOR_PALETTE):
                 with swatch_cols[i]:
-                    if st.button(" ", key=f"sw_{sw_item['id']}", help=sw_item["title"]):
+                    glyph = swatch_glyphs.get(sw_item["id"], "🟦")
+                    if st.button(glyph, key=f"sw_{sw_item['id']}", help=f"{sw_item['title']} — {sw_item['hex']}"):
                         st.session_state["builder_color_hex"] = sw_item["hex"]
                         st.rerun()
 
